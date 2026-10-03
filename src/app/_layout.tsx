@@ -12,6 +12,7 @@ import { useEffect } from 'react';
 
 import { Colors } from '@/constants/theme';
 import { CartProvider } from '@/state/cart';
+import { OrdersProvider } from '@/state/orders';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -37,8 +38,10 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={navigationTheme}>
       <CartProvider>
-        <StatusBar style="dark" />
-        <Stack screenOptions={{ headerShown: false }} />
+        <OrdersProvider>
+          <StatusBar style="dark" />
+          <Stack screenOptions={{ headerShown: false }} />
+        </OrdersProvider>
       </CartProvider>
     </ThemeProvider>
   );

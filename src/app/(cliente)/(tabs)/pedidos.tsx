@@ -10,10 +10,12 @@ import { PriceText } from '@/components/ui/price-text';
 import { Screen } from '@/components/ui/screen';
 import { EmptyState } from '@/components/ui/state-views';
 import { Spacing } from '@/constants/theme';
-import { ESTADOS_EN_CURSO, estadoPedidoUI, etiquetaPago, getComercio, pedidos, totalLineas } from '@/fixtures';
+import { ESTADOS_EN_CURSO, estadoPedidoUI, etiquetaPago, getComercio, totalLineas } from '@/fixtures';
+import { useOrders } from '@/state/orders';
 
 export default function Pedidos() {
   const [vista, setVista] = useState<'curso' | 'historial'>('curso');
+  const { pedidos } = useOrders();
   const enCurso = pedidos.filter((p) => ESTADOS_EN_CURSO.includes(p.estado));
   const historial = pedidos.filter((p) => !ESTADOS_EN_CURSO.includes(p.estado));
   const lista = vista === 'curso' ? enCurso : historial;
@@ -43,6 +45,7 @@ export default function Pedidos() {
               <AppText variant="labelSm" color="onSurfaceVariant">
                 {etiquetaPago(p.pago)}
               </AppText>
+              <Button label="Ver detalle" variant="ghost" accessibilityLabel={`Ver detalle del pedido ${p.codigo}`} onPress={() => router.push({ pathname: '/pedido/[pedidoId]/detalle', params: { pedidoId: p.id } })} />
               {p.estado === 'READY_FOR_PICKUP' ? (
                 <Button label="Ver código de retiro" onPress={() => router.push({ pathname: '/pedido/[pedidoId]/ticket', params: { pedidoId: p.id } })} />
               ) : null}

@@ -5,10 +5,12 @@ import { AppText } from '@/components/ui/app-text';
 import { Screen } from '@/components/ui/screen';
 import { EmptyState, ErrorState } from '@/components/ui/state-views';
 import { Colors, Radius, Spacing } from '@/constants/theme';
-import { credencialIlustrativa, getComercio, pedidos } from '@/fixtures';
+import { credencialIlustrativa, getComercio } from '@/fixtures';
+import { useOrders } from '@/state/orders';
 
 export default function TicketScreen() {
   const { pedidoId } = useLocalSearchParams<{ pedidoId: string }>();
+  const { pedidos } = useOrders();
   const pedido = pedidos.find((p) => p.id === pedidoId);
   const comercio = pedido && getComercio(pedido.comercioId);
 
