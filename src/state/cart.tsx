@@ -1,6 +1,8 @@
-import { createContext, useContext, useReducer, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useReducer, type ReactNode } from 'react';
 
-import { getComercio, getProducto, type Carrito, type Linea } from '@/data';
+import { getComercio, getProducto, useCatalogo, type Carrito, type Linea } from '@/data';
+import { useAuth } from '@/state/auth';
+import { guardarCarritos, leerCarritos } from '@/state/cart-storage';
 
 // DEC-06: el carrito vence 4 h (tiempo corrido) después de su última modificación.
 const PLAZO_CARRITO_MS = 4 * 60 * 60 * 1000;
@@ -79,8 +81,24 @@ type CartContextValue = {
 
 const CartContext = createContext<CartContextValue | null>(null);
 
+// Se monta por usuario (key en la raíz): cada cuenta recupera sólo su propio carrito guardado en el dispositivo.
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [carritos, dispatch] = useReducer(reducer, [] as Carrito[]);
+  const { usuario } = useAuth();
+  const { productos } = useCatalogo();
+  const [guardados, dispatch] = useReducer(reducer, usuario?.id, (id?: string) => (id ? leerCarritos(id) : []));
+
+  useEffect(() => {
+    if (usuario) guardarCarritos(usuario.id, guardados);
+  }, [usuario, guardados]);
+
+  // Un carrito guardado puede referirse a productos retirados del catálogo: se ocultan sin borrar el resto.
+  const carritos = useMemo(() => {
+    if (productos.length === 0) return guardados;
+    const vigentes = new Set(productos.map((p) => p.id));
+    return guardados
+      .map((c) => ({ ...c, lineas: c.lineas.filter((l) => vigentes.has(l.productoId)) }))
+      .filter((c) => c.lineas.length > 0);
+  }, [guardados, productos]);
 
   const cantidadEnCarrito = (productoId: string, ahora: number) => {
     const producto = getProducto(productoId);
