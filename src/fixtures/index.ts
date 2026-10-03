@@ -65,10 +65,12 @@ const MIN = 60_000;
 const ahora = Date.now();
 
 // Los plazos son ilustrativos: la regla de expiración espera DEC-06.
+// La chaqueta del carrito de Boutique supera el stock (7 de 6) para mostrar el aviso de stock cambiante.
 export const carritos: Carrito[] = [
   { id: 'car-techzone', comercioId: 'com-techzone', lineas: [{ productoId: 'prd-audifonos', cantidad: 1 }, { productoId: 'prd-cargador', cantidad: 2 }], expiraEn: ahora + 190 * MIN },
-  { id: 'car-moda', comercioId: 'com-moda', lineas: [{ productoId: 'prd-bufanda', cantidad: 1 }], expiraEn: ahora + 25 * MIN },
-  { id: 'car-cafe-vencido', comercioId: 'com-cafe', lineas: [{ productoId: 'prd-cafe', cantidad: 1 }], expiraEn: ahora - 5 * MIN },
+  { id: 'car-moda', comercioId: 'com-moda', lineas: [{ productoId: 'prd-bufanda', cantidad: 1 }, { productoId: 'prd-chaqueta', cantidad: 7 }], expiraEn: ahora + 25 * MIN },
+  // Vencido con un producto agotado: sirve para probar la recuperación parcial.
+  { id: 'car-techzone-vencido', comercioId: 'com-techzone', lineas: [{ productoId: 'prd-mouse', cantidad: 1 }, { productoId: 'prd-cargador', cantidad: 1 }], expiraEn: ahora - 5 * MIN },
 ];
 
 export const pedidos: Pedido[] = [
