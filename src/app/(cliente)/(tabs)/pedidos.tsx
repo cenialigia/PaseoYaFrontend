@@ -56,5 +56,5 @@ export default function Pedidos() {
 
 const styles = StyleSheet.create({
   tabs: { flexDirection: 'row', gap: Spacing.sm },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.sm },
+  row: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.sm },
 });

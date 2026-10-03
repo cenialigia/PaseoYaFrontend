@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.md,
     gap: Spacing.sm,
   },
-  brandRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  brandRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.sm },
   logo: { fontFamily: 'PlusJakartaSans_800ExtraBold' },
   actions: { flexDirection: 'row', gap: Spacing.xs },
   action: { minWidth: TouchTarget, minHeight: TouchTarget, alignItems: 'center', justifyContent: 'center' },

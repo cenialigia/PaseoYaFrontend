@@ -15,16 +15,14 @@ export function StatusChip({ label, tone }: { label: string; tone: StatusTone })
 }
 
 export function FilterChip({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
+  // Área tocable de 48 dp (también para TalkBack); la pastilla visual mide 36 dp.
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      hitSlop={(TouchTarget - 36) / 2}
-      style={[styles.filter, { backgroundColor: selected ? Colors.secondary : Colors.surfaceContainer }]}>
-      <AppText variant="labelSm" color={selected ? 'onSecondary' : 'onSurfaceVariant'}>
-        {label}
-      </AppText>
+    <Pressable accessibilityRole="button" accessibilityState={{ selected }} accessibilityLabel={label} onPress={onPress} style={styles.touch}>
+      <View style={[styles.filter, { backgroundColor: selected ? Colors.secondary : Colors.surfaceContainer }]}>
+        <AppText variant="labelSm" color={selected ? 'onSecondary' : 'onSurfaceVariant'}>
+          {label}
+        </AppText>
+      </View>
     </Pressable>
   );
 }
@@ -36,6 +34,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.sm + 2,
     paddingVertical: Spacing.xs,
   },
+  touch: { minHeight: TouchTarget, justifyContent: 'center' },
   filter: {
     height: 36,
     borderRadius: Radius.pill,

@@ -63,7 +63,7 @@ export default function Explorar() {
 
 const styles = StyleSheet.create({
   notice: { backgroundColor: Colors.primaryFixed, borderRadius: Radius.control, padding: Spacing.md },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.sm },
+  row: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.sm },
   // Placeholder sin marca (DEC-15): sustituye a las fotos de Stitch.
   placeholder: { height: 96, borderRadius: Radius.control, backgroundColor: Colors.surfaceContainer },
 });
