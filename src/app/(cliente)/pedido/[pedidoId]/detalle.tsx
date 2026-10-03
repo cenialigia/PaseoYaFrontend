@@ -1,5 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
+import QRCode from 'react-native-qrcode-svg';
 
 import { AppText } from '@/components/ui/app-text';
 import { Button } from '@/components/ui/button';
@@ -14,7 +15,7 @@ import { useOrders } from '@/state/orders';
 
 export default function PedidoScreen() {
   const { pedidoId } = useLocalSearchParams<{ pedidoId: string }>();
-  const { pedidos } = useOrders();
+  const { pedidos, simularPago, cancelar } = useOrders();
   const pedido = pedidos.find((p) => p.id === pedidoId);
   const comercio = pedido && getComercio(pedido.comercioId);
 
@@ -22,6 +23,19 @@ export default function PedidoScreen() {
 
   const estado = estadoPedidoUI[pedido.estado];
   const listo = pedido.estado === 'READY_FOR_PICKUP';
+  const activo = pedido.estado !== 'CANCELLED' && pedido.estado !== 'EXPIRED' && pedido.estado !== 'DELIVERED';
+  const qrPendiente = pedido.pago.metodo === 'QR_SIMULADO' && pedido.pago.estado === 'PENDING' && activo;
+  const total = totalLineas(pedido.lineas);
+
+  const confirmarCancelacion = () =>
+    Alert.alert(
+      'Cancelar pedido',
+      pedido.pago.estado === 'PAID' ? 'El pedido se cancelará y el pago simulado pasará a reembolso simulado.' : 'El pedido se cancelará.',
+      [
+        { text: 'Volver', style: 'cancel' },
+        { text: 'Cancelar pedido', style: 'destructive', onPress: () => cancelar(pedido.id) },
+      ],
+    );
 
   return (
     <Screen>
@@ -47,23 +61,38 @@ export default function PedidoScreen() {
         })}
         <View style={styles.row}>
           <AppText variant="label">Total</AppText>
-          <PriceText amount={totalLineas(pedido.lineas)} />
+          <PriceText amount={total} />
         </View>
       </Section>
 
       {/* Pago y retiro van en bloques separados para que nunca se confundan (MK-04). */}
-      <View style={styles.pago} accessible accessibilityLabel={`Pago: ${etiquetaPago(pedido.pago)}`}>
+      <View style={styles.pago}>
         <AppText variant="overline" color="onPrimaryFixedVariant">
           PAGO
         </AppText>
         <AppText variant="label" color="onPrimaryFixedVariant">
-          {etiquetaPago(pedido.pago)}
+          {etiquetaPago(pedido)}
         </AppText>
-        <AppText variant="bodySm" color="onPrimaryFixedVariant">
-          {pedido.pago.metodo === 'QR_SIMULADO'
-            ? 'Demostración sin cobro real. La confirmación del pago simulado está pendiente [DEC-04].'
-            : 'Pagará en efectivo en el local al retirar. Plazo para retirar: [plazo DEC-06].'}
-        </AppText>
+        {qrPendiente ? (
+          <>
+            <View style={styles.qrPago} accessible accessibilityLabel="QR de pago simulado, sin valor">
+              <AppText variant="overline" color="error">
+                SIMULADO · SIN VALOR
+              </AppText>
+              <QRCode value={`paseoya:pago-simulado:${pedido.id}:${total}`} size={140} color={Colors.primaryContainer} backgroundColor={Colors.surfaceContainerLowest} />
+            </View>
+            <AppText variant="bodySm" color="onPrimaryFixedVariant">
+              Demostración sin cobro real. Pulse «Simular pago» para marcarlo como pagado.
+            </AppText>
+            <Button label="Simular pago" onPress={() => simularPago(pedido.id)} />
+          </>
+        ) : (
+          <AppText variant="bodySm" color="onPrimaryFixedVariant">
+            {pedido.pago.metodo === 'EFECTIVO'
+              ? 'Pagará en efectivo en el local al retirar. Plazo para retirar: 72 horas desde la confirmación.'
+              : 'Demostración sin cobro real. Plazo para retirar: 14 días desde la confirmación.'}
+          </AppText>
+        )}
       </View>
 
       <View style={styles.retiro}>
@@ -73,14 +102,20 @@ export default function PedidoScreen() {
         <AppText variant="bodySm" color="onSecondaryFixedVariant">
           {listo
             ? 'Su pedido está listo. Presente el código de retiro en el local.'
-            : 'El código de retiro aparecerá cuando el comercio marque el pedido como listo.'}
+            : pedido.estado === 'DELIVERED'
+              ? 'Pedido entregado.'
+              : activo
+                ? 'El código de retiro aparecerá cuando el comercio marque el pedido como listo.'
+                : 'Este pedido ya no está activo.'}
         </AppText>
         {listo ? (
           <Button label="Ver código de retiro" onPress={() => router.push({ pathname: '/pedido/[pedidoId]/ticket', params: { pedidoId: pedido.id } })} />
         ) : null}
       </View>
 
-      <Button label="Ver mis pedidos" variant="outline" onPress={() => router.navigate('/pedidos')} />
+      {/* DEC-08: el cliente sólo cancela antes de que empiece la preparación. */}
+      {pedido.estado === 'CONFIRMED' ? <Button label="Cancelar pedido" variant="outline" onPress={confirmarCancelacion} /> : null}
+      <Button label="Ver mis pedidos" variant="ghost" onPress={() => router.navigate('/pedidos')} />
     </Screen>
   );
 }
@@ -88,6 +123,7 @@ export default function PedidoScreen() {
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.sm },
   flex: { flex: 1, flexShrink: 1 },
-  pago: { backgroundColor: Colors.primaryFixed, borderRadius: Radius.control, padding: Spacing.md, gap: Spacing.xs },
+  pago: { backgroundColor: Colors.primaryFixed, borderRadius: Radius.control, padding: Spacing.md, gap: Spacing.sm },
+  qrPago: { alignItems: 'center', gap: Spacing.xs, padding: Spacing.md, borderRadius: Radius.control, backgroundColor: Colors.surfaceContainerLowest },
   retiro: { backgroundColor: Colors.secondaryFixed, borderRadius: Radius.control, padding: Spacing.md, gap: Spacing.sm },
 });

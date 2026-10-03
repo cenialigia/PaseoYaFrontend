@@ -18,12 +18,12 @@ const METODOS: { id: MetodoPago; titulo: string; detalle: string }[] = [
   {
     id: 'QR_SIMULADO',
     titulo: 'QR de pago (simulado)',
-    detalle: 'Demostración sin cobro real. Recibirá un QR de pago simulado; la forma de confirmarlo está pendiente [DEC-04].',
+    detalle: 'Demostración sin cobro real. Después de confirmar verá un QR simulado y podrá pulsar «Simular pago». Plazo para retirar: 14 días.',
   },
   {
     id: 'EFECTIVO',
     titulo: 'Efectivo al retirar',
-    detalle: 'Paga en el local cuando retira su pedido. Plazo para retirar: [plazo DEC-06].',
+    detalle: 'Paga en el local cuando retira su pedido. Plazo para retirar: 72 horas desde la confirmación.',
   },
 ];
 
@@ -126,7 +126,7 @@ export default function CheckoutScreen() {
           Retiro presencial
         </AppText>
         <AppText variant="bodySm" color="onSecondaryFixedVariant">
-          Cuando el pedido esté listo recibirá un código de retiro para presentar en el local. Ese código es distinto del QR de pago.
+          Al confirmar se aparta el stock. Cuando el pedido esté listo recibirá un código de retiro (QR + PIN) para presentar en el local; es distinto del QR de pago.
         </AppText>
       </View>
 

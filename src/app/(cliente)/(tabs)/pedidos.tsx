@@ -43,7 +43,7 @@ export default function Pedidos() {
               </AppText>
               <PriceText amount={totalLineas(p.lineas)} />
               <AppText variant="labelSm" color="onSurfaceVariant">
-                {etiquetaPago(p.pago)}
+                {etiquetaPago(p)}
               </AppText>
               <Button label="Ver detalle" variant="ghost" accessibilityLabel={`Ver detalle del pedido ${p.codigo}`} onPress={() => router.push({ pathname: '/pedido/[pedidoId]/detalle', params: { pedidoId: p.id } })} />
               {p.estado === 'READY_FOR_PICKUP' ? (

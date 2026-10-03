@@ -11,6 +11,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
 import { Colors } from '@/constants/theme';
+import { AuthProvider } from '@/state/auth';
 import { CartProvider } from '@/state/cart';
 import { OrdersProvider } from '@/state/orders';
 
@@ -37,12 +38,14 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={navigationTheme}>
+      <AuthProvider>
       <CartProvider>
         <OrdersProvider>
           <StatusBar style="dark" />
           <Stack screenOptions={{ headerShown: false }} />
         </OrdersProvider>
       </CartProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 }

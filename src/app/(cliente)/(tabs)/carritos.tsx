@@ -39,7 +39,7 @@ export default function Carritos() {
       {activos.length === 0 ? (
         <EmptyState
           title="No tiene carritos activos"
-          message="Agregue productos desde Explorar o Comparar."
+          message="Agregue productos desde Explorar o Buscar."
           actionLabel="Ir a Explorar"
           onAction={() => router.navigate('/explorar')}
         />

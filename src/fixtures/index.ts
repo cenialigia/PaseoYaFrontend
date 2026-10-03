@@ -41,6 +41,8 @@ export type Pedido = {
   lineas: Linea[];
   estado: EstadoPedido;
   pago: { metodo: MetodoPago; estado: EstadoPago };
+  // PIN de retiro (DEC-16); sólo se muestra en READY_FOR_PICKUP.
+  pin?: string;
 };
 
 export const comercios: Comercio[] = [
@@ -82,9 +84,6 @@ export const pedidos: Pedido[] = [
   { id: 'ped-0970', codigo: 'PY-0970', comercioId: 'com-techzone', lineas: [{ productoId: 'prd-cargador', cantidad: 1 }], estado: 'EXPIRED', pago: { metodo: 'EFECTIVO', estado: 'PENDING' } },
 ];
 
-// Credencial deliberadamente inválida: nunca debe parecer un formato aceptado por el backend.
-export const credencialIlustrativa = { pin: '000000', qr: 'FIXTURE-NO-VALIDO' };
-
 export function getComercio(id: string): Comercio | undefined {
   return comercios.find((c) => c.id === id);
 }
@@ -108,8 +107,11 @@ export const estadoPedidoUI: Record<EstadoPedido, { etiqueta: string; tono: Stat
   EXPIRED: { etiqueta: 'Expirado', tono: 'cerrado' },
 };
 
-export function etiquetaPago(pago: Pedido['pago']): string {
+export function etiquetaPago(pedido: Pick<Pedido, 'pago' | 'estado'>): string {
+  const { pago, estado } = pedido;
   if (pago.estado === 'REFUNDED') return 'Reembolso simulado';
+  // DEC-07: un QR simulado pagado y no retirado queda retenido por el comercio.
+  if (estado === 'EXPIRED') return pago.metodo === 'QR_SIMULADO' && pago.estado === 'PAID' ? 'Pago simulado retenido por el comercio' : 'Reserva vencida sin pago';
   if (pago.metodo === 'QR_SIMULADO') return pago.estado === 'PAID' ? 'Pago QR simulado confirmado' : 'QR de pago pendiente (simulado)';
   return pago.estado === 'PAID' ? 'Efectivo cobrado' : 'Efectivo al retirar';
 }

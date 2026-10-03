@@ -20,17 +20,10 @@ export function AppHeader({ title }: { title: string }) {
           </AppText>
         </View>
         <View style={styles.actions}>
-          <Link href="/notificaciones" asChild>
-            <Pressable accessibilityRole="button" accessibilityLabel="Notificaciones" style={styles.action}>
-              <AppText variant="labelSm" color="primary">
-                Avisos
-              </AppText>
-            </Pressable>
-          </Link>
           <Link href="/cuenta" asChild>
-            <Pressable accessibilityRole="button" accessibilityLabel="Mi cuenta" style={styles.action}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Mi perfil" style={styles.action}>
               <AppText variant="labelSm" color="primary">
-                Cuenta
+                Perfil
               </AppText>
             </Pressable>
           </Link>

@@ -29,7 +29,7 @@ export default function Explorar() {
         </AppText>
       </View>
 
-      <Button label="Buscar y comparar productos" variant="outline" onPress={() => router.navigate('/comparar')} />
+      <Button label="Buscar productos" variant="outline" onPress={() => router.navigate('/buscar')} />
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} accessibilityLabel="Categorías">
         {categorias.map((c) => (

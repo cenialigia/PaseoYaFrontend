@@ -22,9 +22,9 @@ export default function TabsLayout() {
         <NativeTabs.Trigger.Label>Explorar</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon md="storefront" />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="comparar" labelVisibilityMode="labeled">
-        <NativeTabs.Trigger.Label>Comparar</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon md="compare_arrows" />
+      <NativeTabs.Trigger name="buscar" labelVisibilityMode="labeled">
+        <NativeTabs.Trigger.Label>Buscar</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon md="search" />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="carritos" labelVisibilityMode="labeled">
         <NativeTabs.Trigger.Label>Carritos</NativeTabs.Trigger.Label>

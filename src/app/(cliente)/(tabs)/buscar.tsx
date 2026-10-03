@@ -7,12 +7,12 @@ import { FilterChip } from '@/components/ui/chip';
 import { Screen } from '@/components/ui/screen';
 import { EmptyState } from '@/components/ui/state-views';
 import { Colors, Radius, Spacing, TouchTarget, Typography } from '@/constants/theme';
-import { getComercio, productos } from '@/fixtures';
-import { formatPrice, normalizeSearch } from '@/lib/format';
+import { productos } from '@/fixtures';
+import { normalizeSearch } from '@/lib/format';
 
 type Filtro = 'todos' | 'precio' | 'stock';
 
-export default function Comparar() {
+export default function Buscar() {
   const [consulta, setConsulta] = useState('');
   const [filtro, setFiltro] = useState<Filtro>('todos');
 
@@ -21,12 +21,10 @@ export default function Comparar() {
   if (filtro === 'stock') resultados = resultados.filter((p) => p.stock > 0);
   if (filtro === 'precio') resultados = [...resultados].sort((a, b) => a.precio - b.precio);
 
-  const disponibles = resultados.filter((p) => p.stock > 0 && getComercio(p.comercioId)?.abierto);
-  const masBarato = disponibles.reduce<(typeof disponibles)[number] | undefined>((min, p) => (!min || p.precio < min.precio ? p : min), undefined);
   const nComercios = new Set(resultados.map((p) => p.comercioId)).size;
 
   return (
-    <Screen title="Comparar">
+    <Screen title="Buscar">
       <View style={styles.searchRow}>
         <TextInput
           value={consulta}
@@ -46,25 +44,14 @@ export default function Comparar() {
       </View>
 
       {!termino ? (
-        <EmptyState title="Busque un producto" message="Verá productos similares de varios comercios, con su precio y disponibilidad." />
+        <EmptyState title="Busque un producto" message="Verá las opciones de ese producto en los distintos comercios, con su precio y disponibilidad." />
       ) : resultados.length === 0 ? (
         <EmptyState title="Sin resultados" message="Pruebe con otro nombre o quite el filtro." />
       ) : (
         <>
-          <View style={styles.summary}>
-            <AppText variant="label">
-              {resultados.length} {resultados.length === 1 ? 'producto' : 'productos'} en {nComercios} {nComercios === 1 ? 'comercio' : 'comercios'}
-            </AppText>
-            <AppText variant="bodySm" color="onSurfaceVariant">
-              {masBarato
-                ? `Menor precio disponible: ${formatPrice(masBarato.precio)} en ${getComercio(masBarato.comercioId)?.nombre}`
-                : 'Ninguno está disponible ahora.'}
-            </AppText>
-            {/* DEC-09: no se afirma equivalencia entre productos de distintos comercios. */}
-            <AppText variant="caption" color="onSurfaceVariant">
-              Los productos se muestran por coincidencia de nombre; compruebe que son el mismo modelo antes de comprar.
-            </AppText>
-          </View>
+          <AppText variant="label" accessibilityLiveRegion="polite">
+            {resultados.length} {resultados.length === 1 ? 'opción' : 'opciones'} en {nComercios} {nComercios === 1 ? 'comercio' : 'comercios'}
+          </AppText>
           {resultados.map((p) => (
             <ProductCard key={p.id} producto={p} />
           ))}
@@ -88,5 +75,4 @@ const styles = StyleSheet.create({
     color: Colors.onSurface,
   },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
-  summary: { backgroundColor: Colors.surfaceContainerLow, borderRadius: Radius.control, padding: Spacing.md, gap: Spacing.xs },
 });

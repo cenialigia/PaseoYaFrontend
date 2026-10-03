@@ -1,6 +1,8 @@
 import { Redirect } from 'expo-router';
 
-// Hasta LUI-07 no hay sesión ni roles: se entra directo al área cliente.
+import { rutaInicial, useAuth } from '@/state/auth';
+
 export default function Index() {
-  return <Redirect href="/explorar" />;
+  const { usuario } = useAuth();
+  return <Redirect href={usuario ? rutaInicial(usuario.rol) : '/ingresar'} />;
 }
