@@ -4,10 +4,12 @@ import { AppText } from '@/components/ui/app-text';
 import { PriceText } from '@/components/ui/price-text';
 import { Screen } from '@/components/ui/screen';
 import { EmptyState, ErrorState } from '@/components/ui/state-views';
-import { carritos, getComercio, totalLineas } from '@/fixtures';
+import { getComercio, totalLineas } from '@/fixtures';
+import { useCart } from '@/state/cart';
 
 export default function CheckoutScreen() {
   const { carritoId } = useLocalSearchParams<{ carritoId: string }>();
+  const { carritos } = useCart();
   const carrito = carritos.find((c) => c.id === carritoId);
   const comercio = carrito && getComercio(carrito.comercioId);
 

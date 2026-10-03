@@ -95,10 +95,6 @@ export function totalLineas(lineas: Linea[]): number {
   return lineas.reduce((sum, l) => sum + (getProducto(l.productoId)?.precio ?? 0) * l.cantidad, 0);
 }
 
-export function carritosActivos(now = Date.now()): Carrito[] {
-  return carritos.filter((c) => c.expiraEn > now);
-}
-
 export const ESTADOS_EN_CURSO: EstadoPedido[] = ['CONFIRMED', 'IN_PREPARATION', 'READY_FOR_PICKUP'];
 
 export const estadoPedidoUI: Record<EstadoPedido, { etiqueta: string; tono: StatusTone }> = {

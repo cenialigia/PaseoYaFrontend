@@ -1,11 +1,12 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 
 import { Colors, FontFamily } from '@/constants/theme';
-import { carritosActivos } from '@/fixtures';
 import { useNow } from '@/hooks/use-now';
+import { useCart } from '@/state/cart';
 
 export default function TabsLayout() {
-  const activos = carritosActivos(useNow()).length;
+  const ahora = useNow();
+  const activos = useCart().carritos.filter((c) => c.expiraEn > ahora).length;
 
   return (
     <NativeTabs

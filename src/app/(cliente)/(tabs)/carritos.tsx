@@ -9,12 +9,14 @@ import { PriceText } from '@/components/ui/price-text';
 import { Screen, Section } from '@/components/ui/screen';
 import { EmptyState } from '@/components/ui/state-views';
 import { Spacing } from '@/constants/theme';
-import { carritos, getComercio, totalLineas, type Carrito } from '@/fixtures';
+import { getComercio, totalLineas, type Carrito } from '@/fixtures';
 import { useNow } from '@/hooks/use-now';
 import { formatRemaining } from '@/lib/format';
+import { useCart } from '@/state/cart';
 
 export default function Carritos() {
   const ahora = useNow();
+  const { carritos } = useCart();
   const activos = carritos.filter((c) => c.expiraEn > ahora);
   const vencidos = carritos.filter((c) => c.expiraEn <= ahora);
 
