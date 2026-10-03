@@ -16,9 +16,12 @@ export default function Ingresar() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<ErrorAuth | null>(null);
 
-  const onIngresar = () => {
-    const e = ingresar(email, password);
-    setError(e);
+  const [enviando, setEnviando] = useState(false);
+
+  const onIngresar = async () => {
+    setEnviando(true);
+    setError(await ingresar(email, password));
+    setEnviando(false);
   };
 
   return (
@@ -38,7 +41,7 @@ export default function Ingresar() {
               {mensajeAuth[error]}
             </AppText>
           ) : null}
-          <Button label="Ingresar" disabled={!email || !password} onPress={onIngresar} />
+          <Button label="Ingresar" disabled={!email || !password} loading={enviando} onPress={onIngresar} />
           <Button label="Crear cuenta de cliente" variant="ghost" onPress={() => router.push('/registro')} />
         </View>
         <AppText variant="caption" color="onSurfaceVariant">

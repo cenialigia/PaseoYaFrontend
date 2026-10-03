@@ -7,7 +7,7 @@ import { FilterChip } from '@/components/ui/chip';
 import { Screen } from '@/components/ui/screen';
 import { EmptyState } from '@/components/ui/state-views';
 import { Colors, Radius, Spacing, TouchTarget, Typography } from '@/constants/theme';
-import { productos } from '@/fixtures';
+import { useCatalogo } from '@/data';
 import { normalizeSearch } from '@/lib/format';
 
 type Filtro = 'todos' | 'precio' | 'stock';
@@ -15,6 +15,7 @@ type Filtro = 'todos' | 'precio' | 'stock';
 export default function Buscar() {
   const [consulta, setConsulta] = useState('');
   const [filtro, setFiltro] = useState<Filtro>('todos');
+  const { productos } = useCatalogo();
 
   const termino = normalizeSearch(consulta);
   let resultados = termino ? productos.filter((p) => normalizeSearch(p.nombre).includes(termino)) : [];

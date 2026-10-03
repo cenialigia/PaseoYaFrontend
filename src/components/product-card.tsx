@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { PriceText } from '@/components/ui/price-text';
 import { Colors, Radius, Spacing } from '@/constants/theme';
-import { getComercio, type Producto } from '@/fixtures';
+import { getComercio, type Producto } from '@/data';
 import { motivoNoAgregado, useCart } from '@/state/cart';
 
 export function stockLabel(stock: number): string {

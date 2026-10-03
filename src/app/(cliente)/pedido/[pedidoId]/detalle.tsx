@@ -9,7 +9,7 @@ import { PriceText } from '@/components/ui/price-text';
 import { Screen, Section } from '@/components/ui/screen';
 import { ErrorState } from '@/components/ui/state-views';
 import { Colors, Radius, Spacing } from '@/constants/theme';
-import { estadoPedidoUI, etiquetaPago, getComercio, getProducto, totalLineas } from '@/fixtures';
+import { estadoPedidoUI, etiquetaPago, getComercio, getProducto } from '@/data';
 import { formatPrice } from '@/lib/format';
 import { useOrders } from '@/state/orders';
 
@@ -25,7 +25,7 @@ export default function PedidoScreen() {
   const listo = pedido.estado === 'READY_FOR_PICKUP';
   const activo = pedido.estado !== 'CANCELLED' && pedido.estado !== 'EXPIRED' && pedido.estado !== 'DELIVERED';
   const qrPendiente = pedido.pago.metodo === 'QR_SIMULADO' && pedido.pago.estado === 'PENDING' && activo;
-  const total = totalLineas(pedido.lineas);
+  const total = pedido.total;
 
   const confirmarCancelacion = () =>
     Alert.alert(
@@ -33,7 +33,7 @@ export default function PedidoScreen() {
       pedido.pago.estado === 'PAID' ? 'El pedido se cancelará y el pago simulado pasará a reembolso simulado.' : 'El pedido se cancelará.',
       [
         { text: 'Volver', style: 'cancel' },
-        { text: 'Cancelar pedido', style: 'destructive', onPress: () => cancelar(pedido.id) },
+        { text: 'Cancelar pedido', style: 'destructive', onPress: () => void cancelar(pedido.id) },
       ],
     );
 
@@ -84,7 +84,7 @@ export default function PedidoScreen() {
             <AppText variant="bodySm" color="onPrimaryFixedVariant">
               Demostración sin cobro real. Pulse «Simular pago» para marcarlo como pagado.
             </AppText>
-            <Button label="Simular pago" onPress={() => simularPago(pedido.id)} />
+            <Button label="Simular pago" onPress={() => void simularPago(pedido.id)} />
           </>
         ) : (
           <AppText variant="bodySm" color="onPrimaryFixedVariant">

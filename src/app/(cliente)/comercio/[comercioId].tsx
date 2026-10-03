@@ -7,10 +7,11 @@ import { StatusChip } from '@/components/ui/chip';
 import { Screen, Section } from '@/components/ui/screen';
 import { EmptyState, ErrorState } from '@/components/ui/state-views';
 import { Colors, Radius, Spacing } from '@/constants/theme';
-import { getComercio, productos } from '@/fixtures';
+import { getComercio, useCatalogo } from '@/data';
 
 export default function ComercioScreen() {
   const { comercioId } = useLocalSearchParams<{ comercioId: string }>();
+  const { productos } = useCatalogo();
   const comercio = getComercio(comercioId);
 
   if (!comercio) return <ErrorState title="Tienda no encontrada" actionLabel="Volver" onAction={() => router.back()} />;

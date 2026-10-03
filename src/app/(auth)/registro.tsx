@@ -31,7 +31,7 @@ export default function Registro() {
             {mensajeAuth[error]}
           </AppText>
         ) : null}
-        <Button label="Crear cuenta" onPress={() => setError(registrarCliente(nombre, email, password))} />
+        <Button label="Crear cuenta" onPress={async () => setError(await registrarCliente(nombre, email, password))} />
         <Button label="Ya tengo cuenta" variant="ghost" onPress={() => router.back()} />
       </ScrollView>
     </KeyboardAvoidingView>

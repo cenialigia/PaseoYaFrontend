@@ -10,17 +10,19 @@ Node.js ≥ 22.13, npm, y un emulador Android o un dispositivo con Expo Go.
 
 ## Arranque
 
-```bash
-npm install
-cp .env.example .env   # rellenar con `npx supabase status` del backend local
-npm run android        # o: npx expo start
-```
+1. Levantar el backend: en `../backend`, `npm install` y `npm run db:start` (Docker Desktop abierto).
+2. Crear `.env` desde `.env.example`:
+   - `EXPO_PUBLIC_SUPABASE_URL`: `http://10.0.2.2:54321` en el emulador Android; `http://<IP-del-equipo>:54321` en un teléfono físico de la misma red.
+   - `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`: la `PUBLISHABLE_KEY` de `npx supabase status -o env` en el backend. Nunca la `SECRET_KEY` ni la `service_role`.
+3. `npm install` y `npm run android` (o `npx expo start`). Si se cambia el `.env`, reiniciar Metro.
 
-Verificación: `npx expo-doctor` y `npx tsc --noEmit`. El archivo `expo-env.d.ts` se genera con el primer `expo start`.
+La app usa Supabase Auth, lee el catálogo y los pedidos con RLS, y todas las escrituras de pedidos pasan por las funciones del backend (`confirmar_pedido`, `simular_pago`, `cancelar_pedido`, `avanzar_pedido`, `confirmar_efectivo`, `validar_retiro`). Los pedidos se actualizan en tiempo real con Supabase Realtime. El carrito vive en el dispositivo (no aparta stock: DEC-05).
+
+Verificación: `npx expo-doctor`, `npx tsc --noEmit` y `npx expo lint`.
 
 ## Cuentas de demostración (ficticias)
 
-Datos en memoria: se reinician al cerrar la app. Contraseña de todas: `demo1234`.
+Vienen del seed del backend (`npm run db:reset` las restablece). Contraseña de todas: `demo1234`.
 
 | Rol | Correo | Entra en |
 | --- | --- | --- |
@@ -42,4 +44,4 @@ También se puede crear una cuenta de cliente desde «Crear cuenta de cliente».
 
 En Expo Go, el botón flotante de herramientas (engranaje) puede tapar «Perfil»: arrástrelo a otro borde.
 
-> Estado: demo con datos simulados en memoria (sin backend). El backend Supabase está en el repositorio PaseoYaBackend.
+> Estado: conectada al backend Supabase local (INT-01). Datos 100 % ficticios.

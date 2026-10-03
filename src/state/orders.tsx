@@ -1,10 +1,9 @@
-import { createContext, useContext, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 
-import { getComercio, getProducto, pedidos as pedidosIniciales, type Carrito, type MetodoPago, type Pedido } from '@/fixtures';
-
-// Fallo simulado sólo en desarrollo para probar error y reintento:
-// 'antes' = no se crea el pedido; 'despues' = se crea pero la respuesta se pierde.
-export type FalloSimulado = 'ninguno' | 'antes' | 'despues';
+import { useCatalogo } from '@/data/catalogo';
+import type { Carrito, EstadoPago, EstadoPedido, MetodoPago, Pedido } from '@/data/modelo';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/state/auth';
 
 export class CheckoutError extends Error {
   constructor(public motivo: 'red' | 'stock' | 'cerrado' | 'vencido') {
@@ -14,125 +13,169 @@ export class CheckoutError extends Error {
 
 export type Reporte = { id: string; pedidoId?: string; mensaje: string; creadoEn: number };
 
-export type ResultadoValidacion = 'ok' | 'pin-incorrecto' | 'no-listo' | 'ajeno' | 'pago-pendiente';
+export type ResultadoValidacion = 'ok' | 'pin-incorrecto' | 'no-listo' | 'ajeno' | 'pago-pendiente' | 'red';
 
-type CrearPedidoInput = { carrito: Carrito; metodo: MetodoPago; claveIdempotencia: string; fallo?: FalloSimulado };
+type CrearPedidoInput = { carrito: Carrito; metodo: MetodoPago; claveIdempotencia: string };
 
 type OrdersContextValue = {
   pedidos: Pedido[];
   reportes: Reporte[];
+  cargando: boolean;
+  recargar: () => Promise<void>;
   crearPedido: (input: CrearPedidoInput) => Promise<Pedido>;
-  simularPago: (pedidoId: string) => void;
-  cancelar: (pedidoId: string) => boolean;
-  iniciarPreparacion: (pedidoId: string, comercioId: string) => void;
-  marcarListo: (pedidoId: string, comercioId: string) => void;
-  confirmarEfectivo: (pedidoId: string, comercioId: string) => void;
-  validarRetiro: (pedidoId: string, comercioId: string, pin: string) => ResultadoValidacion;
-  reportar: (mensaje: string, pedidoId?: string) => void;
+  simularPago: (pedidoId: string) => Promise<boolean>;
+  cancelar: (pedidoId: string) => Promise<boolean>;
+  avanzar: (pedidoId: string) => Promise<boolean>;
+  confirmarEfectivo: (pedidoId: string) => Promise<boolean>;
+  validarRetiro: (pedidoId: string, pin: string) => Promise<ResultadoValidacion>;
+  reportar: (mensaje: string, pedidoId?: string) => Promise<boolean>;
 };
 
 const OrdersContext = createContext<OrdersContextValue | null>(null);
-const LATENCIA_MS = 1200;
 
-// PIN ilustrativo generado en el cliente; en el backend lo emitirá una función confiable (BE-04).
-function nuevoPin(): string {
-  return String(Math.floor(Math.random() * 1_000_000)).padStart(6, '0');
+type FilaPedido = {
+  id: string;
+  codigo: string;
+  comercio_id: string;
+  estado: EstadoPedido;
+  metodo_pago: MetodoPago;
+  estado_pago: EstadoPago;
+  total: number | string;
+  pedido_lineas: { producto_id: string; cantidad: number; precio_unitario: number | string }[];
+};
+
+function aPedido(f: FilaPedido, pines: Map<string, string>): Pedido {
+  return {
+    id: f.id,
+    codigo: f.codigo,
+    comercioId: f.comercio_id,
+    estado: f.estado,
+    pago: { metodo: f.metodo_pago, estado: f.estado_pago },
+    total: Number(f.total),
+    lineas: f.pedido_lineas.map((l) => ({ productoId: l.producto_id, cantidad: l.cantidad, precioUnitario: Number(l.precio_unitario) })),
+    pin: pines.get(f.id),
+  };
+}
+
+const SELECT_PEDIDO = 'id, codigo, comercio_id, estado, metodo_pago, estado_pago, total, pedido_lineas(producto_id, cantidad, precio_unitario)';
+
+type DatosPedidos = { pedidos: Pedido[]; reportes: Reporte[] };
+
+// Lectura pura. RLS decide qué ve cada rol: el cliente sus pedidos, el comercio los suyos, el admin todos.
+async function obtenerPedidos(rol: string): Promise<DatosPedidos | null> {
+  const [p, c, r] = await Promise.all([
+    supabase.from('pedidos').select(SELECT_PEDIDO).order('confirmado_en', { ascending: false }),
+    // Sólo devuelve el PIN de pedidos propios en READY_FOR_PICKUP; para otros roles, vacío.
+    supabase.from('credenciales_retiro').select('pedido_id, pin'),
+    rol === 'ADMIN'
+      ? supabase.from('reportes').select('id, pedido_id, mensaje, creado_en').order('creado_en', { ascending: false })
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+  if (p.error) return null;
+  const pines = new Map((c.data ?? []).map((x) => [x.pedido_id as string, x.pin as string]));
+  return {
+    pedidos: (p.data as FilaPedido[]).map((f) => aPedido(f, pines)),
+    reportes: (r.data ?? []).map((x: { id: string; pedido_id: string | null; mensaje: string; creado_en: string }) => ({
+      id: x.id,
+      pedidoId: x.pedido_id ?? undefined,
+      mensaje: x.mensaje,
+      creadoEn: Date.parse(x.creado_en),
+    })),
+  };
 }
 
 export function OrdersProvider({ children }: { children: ReactNode }) {
-  const [pedidos, setPedidos] = useState<Pedido[]>(() => pedidosIniciales.map((p) => ({ ...p, pin: nuevoPin() })));
+  const { usuario } = useAuth();
+  const { recargar: recargarCatalogo } = useCatalogo();
+  const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [reportes, setReportes] = useState<Reporte[]>([]);
-  // Simula el registro de claves de idempotencia que en el backend vivirá en PostgreSQL (BE-03).
-  const porClave = useRef(new Map<string, Pedido>());
-  const siguiente = useRef(1004);
+  const [cargando, setCargando] = useState(false);
 
-  const actualizar = (pedidoId: string, cambio: (p: Pedido) => Pedido | null) =>
-    setPedidos((ps) => ps.map((p) => (p.id === pedidoId ? (cambio(p) ?? p) : p)));
+  const aplicar = useCallback((datos: DatosPedidos | null) => {
+    setCargando(false);
+    if (!datos) return;
+    setPedidos(datos.pedidos);
+    setReportes(datos.reportes);
+  }, []);
 
-  const crearPedido = ({ carrito, metodo, claveIdempotencia, fallo = 'ninguno' }: CrearPedidoInput) =>
-    new Promise<Pedido>((resolve, reject) => {
-      setTimeout(() => {
-        const previo = porClave.current.get(claveIdempotencia);
-        if (previo) return resolve(previo);
-        if (fallo === 'antes') return reject(new CheckoutError('red'));
-        if (carrito.expiraEn <= Date.now()) return reject(new CheckoutError('vencido'));
-        if (!getComercio(carrito.comercioId)?.abierto) return reject(new CheckoutError('cerrado'));
-        const sinStock = carrito.lineas.some((l) => l.cantidad > (getProducto(l.productoId)?.stock ?? 0));
-        if (sinStock) return reject(new CheckoutError('stock'));
+  const recargar = useCallback(async () => {
+    if (!usuario) return;
+    setCargando(true);
+    aplicar(await obtenerPedidos(usuario.rol));
+  }, [usuario, aplicar]);
 
-        // Sin `++` sobre el ref: con React Compiler el incremento sufijo devolvía el valor ya incrementado.
-        const numero = siguiente.current;
-        siguiente.current = numero + 1;
-        const pedido: Pedido = {
-          id: `ped-${numero}`,
-          codigo: `PY-${numero}`,
-          comercioId: carrito.comercioId,
-          lineas: carrito.lineas.map((l) => ({ ...l })),
-          estado: 'CONFIRMED',
-          pago: { metodo, estado: 'PENDING' },
-          pin: nuevoPin(),
-        };
-        porClave.current.set(claveIdempotencia, pedido);
-        setPedidos((ps) => [pedido, ...ps]);
-        if (fallo === 'despues') return reject(new CheckoutError('red'));
-        resolve(pedido);
-      }, LATENCIA_MS);
+  useEffect(() => {
+    if (!usuario) return;
+    let activo = true;
+    const refrescar = () => {
+      obtenerPedidos(usuario.rol).then((datos) => {
+        if (activo) aplicar(datos);
+      });
+    };
+    refrescar();
+    // Realtime sobre `pedidos` (respeta RLS): el panel del comercio y el cliente se actualizan solos.
+    const canal = supabase
+      .channel(`pedidos-${usuario.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, refrescar)
+      .subscribe();
+    return () => {
+      activo = false;
+      supabase.removeChannel(canal);
+    };
+  }, [usuario, aplicar]);
+
+  const rpc = async (fn: string, args: Record<string, unknown>) => {
+    const { data, error } = await supabase.rpc(fn, args);
+    if (!error) await recargar();
+    return { data, error };
+  };
+
+  // BE-03: confirmar_pedido es idempotente por clave y aparta el stock de forma atómica (DEC-05).
+  const crearPedido = async ({ carrito, metodo, claveIdempotencia }: CrearPedidoInput): Promise<Pedido> => {
+    if (carrito.expiraEn <= Date.now()) throw new CheckoutError('vencido');
+    const { data, error } = await supabase.rpc('confirmar_pedido', {
+      p_comercio_id: carrito.comercioId,
+      p_lineas: carrito.lineas.map((l) => ({ producto_id: l.productoId, cantidad: l.cantidad })),
+      p_metodo: metodo,
+      p_clave: claveIdempotencia,
     });
-
-  // DEC-04: sólo simula; no hay cobro real.
-  const simularPago = (pedidoId: string) =>
-    actualizar(pedidoId, (p) =>
-      p.pago.metodo === 'QR_SIMULADO' && p.pago.estado === 'PENDING' && p.estado !== 'CANCELLED' && p.estado !== 'EXPIRED'
-        ? { ...p, pago: { ...p.pago, estado: 'PAID' } }
-        : null,
-    );
-
-  // DEC-08: el cliente sólo cancela en Confirmado; un QR simulado pagado pasa a reembolso simulado.
-  const cancelar = (pedidoId: string) => {
-    const p = pedidos.find((x) => x.id === pedidoId);
-    if (!p || p.estado !== 'CONFIRMED') return false;
-    actualizar(pedidoId, (x) => ({
-      ...x,
-      estado: 'CANCELLED',
-      pago: x.pago.estado === 'PAID' && x.pago.metodo === 'QR_SIMULADO' ? { ...x.pago, estado: 'REFUNDED' } : x.pago,
-    }));
-    return true;
+    if (error) {
+      if (error.code === 'P0002') throw new CheckoutError('stock');
+      if (error.code === 'P0001') throw new CheckoutError('cerrado');
+      throw new CheckoutError('red');
+    }
+    await Promise.all([recargar(), recargarCatalogo()]);
+    const f = data as Omit<FilaPedido, 'pedido_lineas'>;
+    return aPedido({ ...f, pedido_lineas: carrito.lineas.map((l) => ({ producto_id: l.productoId, cantidad: l.cantidad, precio_unitario: 0 })) }, new Map());
   };
 
-  // Las acciones del comercio comprueban que el pedido sea suyo; en el backend lo impone RLS.
-  const deComercio = (p: Pedido, comercioId: string) => p.comercioId === comercioId;
+  const simularPago = async (pedidoId: string) => !(await rpc('simular_pago', { p_pedido: pedidoId })).error;
 
-  const iniciarPreparacion = (pedidoId: string, comercioId: string) =>
-    actualizar(pedidoId, (p) => (deComercio(p, comercioId) && p.estado === 'CONFIRMED' ? { ...p, estado: 'IN_PREPARATION' } : null));
-
-  const marcarListo = (pedidoId: string, comercioId: string) =>
-    actualizar(pedidoId, (p) => (deComercio(p, comercioId) && p.estado === 'IN_PREPARATION' ? { ...p, estado: 'READY_FOR_PICKUP' } : null));
-
-  const confirmarEfectivo = (pedidoId: string, comercioId: string) =>
-    actualizar(pedidoId, (p) =>
-      deComercio(p, comercioId) && p.pago.metodo === 'EFECTIVO' && p.pago.estado === 'PENDING' && p.estado === 'READY_FOR_PICKUP'
-        ? { ...p, pago: { ...p.pago, estado: 'PAID' } }
-        : null,
-    );
-
-  // DEC-16: un solo uso; sólo el comercio dueño y sólo en Listo para retiro.
-  const validarRetiro = (pedidoId: string, comercioId: string, pin: string): ResultadoValidacion => {
-    const p = pedidos.find((x) => x.id === pedidoId);
-    if (!p || !deComercio(p, comercioId)) return 'ajeno';
-    if (p.estado !== 'READY_FOR_PICKUP') return 'no-listo';
-    if (p.pin !== pin.trim()) return 'pin-incorrecto';
-    // No se entrega un pedido sin pago: efectivo confirmado por el comercio o QR simulado pagado.
-    if (p.pago.estado !== 'PAID') return 'pago-pendiente';
-    actualizar(pedidoId, (x) => ({ ...x, estado: 'DELIVERED' }));
-    return 'ok';
+  const cancelar = async (pedidoId: string) => {
+    const ok = !(await rpc('cancelar_pedido', { p_pedido: pedidoId })).error;
+    if (ok) await recargarCatalogo();
+    return ok;
   };
 
-  const reportar = (mensaje: string, pedidoId?: string) =>
-    setReportes((rs) => [{ id: `rep-${rs.length + 1}`, pedidoId, mensaje, creadoEn: Date.now() }, ...rs]);
+  const avanzar = async (pedidoId: string) => !(await rpc('avanzar_pedido', { p_pedido: pedidoId })).error;
+
+  const confirmarEfectivo = async (pedidoId: string) => !(await rpc('confirmar_efectivo', { p_pedido: pedidoId })).error;
+
+  const validarRetiro = async (pedidoId: string, pin: string): Promise<ResultadoValidacion> => {
+    const { data, error } = await rpc('validar_retiro', { p_pedido: pedidoId, p_pin: pin.trim() });
+    if (error) return 'red';
+    return data as ResultadoValidacion;
+  };
+
+  const reportar = async (mensaje: string, pedidoId?: string) => {
+    if (!usuario) return false;
+    const { error } = await supabase.from('reportes').insert({ cliente_id: usuario.id, pedido_id: pedidoId ?? null, mensaje });
+    return !error;
+  };
 
   return (
     <OrdersContext.Provider
-      value={{ pedidos, reportes, crearPedido, simularPago, cancelar, iniciarPreparacion, marcarListo, confirmarEfectivo, validarRetiro, reportar }}>
+      value={{ pedidos, reportes, cargando, recargar, crearPedido, simularPago, cancelar, avanzar, confirmarEfectivo, validarRetiro, reportar }}>
       {children}
     </OrdersContext.Provider>
   );
@@ -157,4 +200,5 @@ export const mensajeValidacion: Record<ResultadoValidacion, string> = {
   'no-listo': 'El pedido no está listo para retiro o ya fue entregado.',
   ajeno: 'Este pedido no pertenece a su comercio.',
   'pago-pendiente': 'El pago está pendiente. Confirme el efectivo o espere el pago simulado antes de entregar.',
+  red: 'No se pudo conectar con el servidor. Intente de nuevo.',
 };

@@ -11,7 +11,8 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
 import { Colors } from '@/constants/theme';
-import { AuthProvider } from '@/state/auth';
+import { CatalogoProvider } from '@/data/catalogo';
+import { AuthProvider, useAuth } from '@/state/auth';
 import { CartProvider } from '@/state/cart';
 import { OrdersProvider } from '@/state/orders';
 
@@ -39,13 +40,23 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={navigationTheme}>
       <AuthProvider>
+        <DatosDeSesion />
+      </AuthProvider>
+    </ThemeProvider>
+  );
+}
+
+// Catálogo, carrito y pedidos se remontan al cambiar de usuario para no mezclar datos entre cuentas.
+function DatosDeSesion() {
+  const { usuario } = useAuth();
+  return (
+    <CatalogoProvider key={usuario?.id ?? 'sin-sesion'}>
       <CartProvider>
         <OrdersProvider>
           <StatusBar style="dark" />
           <Stack screenOptions={{ headerShown: false }} />
         </OrdersProvider>
       </CartProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    </CatalogoProvider>
   );
 }

@@ -8,7 +8,7 @@ import { StatusChip } from '@/components/ui/chip';
 import { Screen, Section } from '@/components/ui/screen';
 import { EmptyState } from '@/components/ui/state-views';
 import { Colors, Radius, Spacing } from '@/constants/theme';
-import { comercios, estadoPedidoUI, getComercio, totalLineas, type EstadoPedido } from '@/fixtures';
+import { estadoPedidoUI, getComercio, useCatalogo, type EstadoPedido } from '@/data';
 import { formatPrice } from '@/lib/format';
 import { useAuth } from '@/state/auth';
 import { useOrders } from '@/state/orders';
@@ -19,11 +19,12 @@ const ESTADOS: EstadoPedido[] = ['CONFIRMED', 'IN_PREPARATION', 'READY_FOR_PICKU
 export default function AdminScreen() {
   const { salir } = useAuth();
   const { pedidos, reportes } = useOrders();
-  const ventas = pedidos.filter((p) => p.estado === 'DELIVERED').reduce((s, p) => s + totalLineas(p.lineas), 0);
+  const { comercios } = useCatalogo();
+  const ventas = pedidos.filter((p) => p.estado === 'DELIVERED').reduce((s, p) => s + p.total, 0);
 
   return (
     <Screen>
-      <Stack.Screen options={{ title: 'Administración', headerRight: () => <Button label="Salir" variant="ghost" onPress={salir} /> }} />
+      <Stack.Screen options={{ title: 'Administración', headerRight: () => <Button label="Salir" variant="ghost" onPress={() => void salir()} /> }} />
       <View style={styles.kpi} accessible accessibilityLabel={`Ventas entregadas en la plaza: ${formatPrice(ventas)}`}>
         <AppText variant="label" color="onPrimaryFixedVariant">
           Ventas entregadas · Paseo Aranjuez

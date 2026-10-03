@@ -10,7 +10,7 @@ import { PriceText } from '@/components/ui/price-text';
 import { Screen } from '@/components/ui/screen';
 import { EmptyState } from '@/components/ui/state-views';
 import { Spacing } from '@/constants/theme';
-import { ESTADOS_EN_CURSO, estadoPedidoUI, etiquetaPago, getComercio, totalLineas } from '@/fixtures';
+import { ESTADOS_EN_CURSO, estadoPedidoUI, etiquetaPago, getComercio } from '@/data';
 import { useOrders } from '@/state/orders';
 
 export default function Pedidos() {
@@ -41,7 +41,7 @@ export default function Pedidos() {
               <AppText variant="bodySm" color="onSurfaceVariant">
                 {p.codigo} · {c?.local} · {c?.piso}
               </AppText>
-              <PriceText amount={totalLineas(p.lineas)} />
+              <PriceText amount={p.total} />
               <AppText variant="labelSm" color="onSurfaceVariant">
                 {etiquetaPago(p)}
               </AppText>

@@ -1,6 +1,7 @@
 import { Redirect, Stack } from 'expo-router';
 
 import { Colors, FontFamily } from '@/constants/theme';
+import { CatalogoGate } from '@/components/catalogo-gate';
 import { useAuth } from '@/state/auth';
 
 export default function AdminLayout() {
@@ -8,13 +9,15 @@ export default function AdminLayout() {
   // Comodidad de interfaz: el acceso global del admin lo concede el backend (DEC-10).
   if (usuario?.rol !== 'ADMIN') return <Redirect href="/" />;
   return (
-    <Stack
-      screenOptions={{
-        headerTintColor: Colors.primary,
-        headerStyle: { backgroundColor: Colors.surface },
-        headerTitleStyle: { fontFamily: FontFamily.semiBold, color: Colors.onSurface },
-        contentStyle: { backgroundColor: Colors.surface },
-      }}
-    />
+    <CatalogoGate>
+      <Stack
+        screenOptions={{
+          headerTintColor: Colors.primary,
+          headerStyle: { backgroundColor: Colors.surface },
+          headerTitleStyle: { fontFamily: FontFamily.semiBold, color: Colors.onSurface },
+          contentStyle: { backgroundColor: Colors.surface },
+        }}
+      />
+    </CatalogoGate>
   );
 }

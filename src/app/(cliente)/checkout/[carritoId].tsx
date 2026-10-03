@@ -4,15 +4,14 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/ui/app-text';
 import { Button } from '@/components/ui/button';
-import { FilterChip } from '@/components/ui/chip';
 import { PriceText } from '@/components/ui/price-text';
 import { Screen, Section } from '@/components/ui/screen';
 import { ErrorState } from '@/components/ui/state-views';
 import { Colors, Radius, Spacing, TouchTarget } from '@/constants/theme';
-import { getComercio, getProducto, totalLineas, type MetodoPago } from '@/fixtures';
+import { getComercio, getProducto, totalLineas, type MetodoPago } from '@/data';
 import { formatPrice } from '@/lib/format';
 import { problemasDeCarrito, useCart } from '@/state/cart';
-import { CheckoutError, mensajeCheckoutError, useOrders, type FalloSimulado } from '@/state/orders';
+import { CheckoutError, mensajeCheckoutError, useOrders } from '@/state/orders';
 
 const METODOS: { id: MetodoPago; titulo: string; detalle: string }[] = [
   {
@@ -37,7 +36,6 @@ export default function CheckoutScreen() {
   const [metodo, setMetodo] = useState<MetodoPago | null>(null);
   const [procesando, setProcesando] = useState(false);
   const [error, setError] = useState<CheckoutError['motivo'] | null>(null);
-  const [fallo, setFallo] = useState<FalloSimulado>('ninguno');
   // Segunda barrera además del botón deshabilitado: un doble toque no lanza dos solicitudes.
   const enCurso = useRef(false);
 
@@ -54,12 +52,11 @@ export default function CheckoutScreen() {
     setError(null);
     try {
       // Un carrito sólo puede convertirse en un pedido: la clave se deriva de él.
-      const pedido = await crearPedido({ carrito, metodo, claveIdempotencia: `chk-${carrito.id}`, fallo });
+      const pedido = await crearPedido({ carrito, metodo, claveIdempotencia: `chk-${carrito.id}` });
       eliminarCarrito(carrito.id);
       router.replace({ pathname: '/pedido/[pedidoId]/detalle', params: { pedidoId: pedido.id } });
     } catch (e) {
       setError(e instanceof CheckoutError ? e.motivo : 'red');
-      if (fallo !== 'ninguno') setFallo('ninguno');
     } finally {
       enCurso.current = false;
       setProcesando(false);
@@ -130,18 +127,6 @@ export default function CheckoutScreen() {
         </AppText>
       </View>
 
-      {__DEV__ ? (
-        <View style={styles.dev}>
-          <AppText variant="caption" color="onSurfaceVariant">
-            Sólo desarrollo · simular conexión
-          </AppText>
-          <View style={styles.chips}>
-            <FilterChip label="Sin fallo" selected={fallo === 'ninguno'} onPress={() => setFallo('ninguno')} />
-            <FilterChip label="Falla antes" selected={fallo === 'antes'} onPress={() => setFallo('antes')} />
-            <FilterChip label="Respuesta perdida" selected={fallo === 'despues'} onPress={() => setFallo('despues')} />
-          </View>
-        </View>
-      ) : null}
 
       {error ? (
         <View style={styles.error} accessibilityRole="alert" accessibilityLiveRegion="assertive">
@@ -188,7 +173,5 @@ const styles = StyleSheet.create({
   radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: Colors.outline, marginTop: 2 },
   radioActivo: { borderColor: Colors.primary, borderWidth: 7 },
   retiro: { backgroundColor: Colors.secondaryFixed, borderRadius: Radius.control, padding: Spacing.md, gap: Spacing.xs },
-  dev: { gap: Spacing.xs, padding: Spacing.sm, borderRadius: Radius.control, borderWidth: 1, borderColor: Colors.outlineVariant, borderStyle: 'dashed' },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
   error: { backgroundColor: Colors.errorContainer, borderRadius: Radius.control, padding: Spacing.md, gap: Spacing.sm },
 });

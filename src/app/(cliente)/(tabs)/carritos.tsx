@@ -11,7 +11,7 @@ import { QuantityStepper } from '@/components/ui/quantity-stepper';
 import { Screen, Section } from '@/components/ui/screen';
 import { EmptyState } from '@/components/ui/state-views';
 import { Colors, Radius, Spacing } from '@/constants/theme';
-import { getComercio, getProducto, totalLineas, type Carrito } from '@/fixtures';
+import { getComercio, getProducto, totalLineas, type Carrito } from '@/data';
 import { useNow } from '@/hooks/use-now';
 import { formatPrice, formatRemaining } from '@/lib/format';
 import { problemasDeCarrito, useCart } from '@/state/cart';

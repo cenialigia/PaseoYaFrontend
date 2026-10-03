@@ -1,6 +1,7 @@
 import { Redirect, Stack } from 'expo-router';
 
 import { Colors, FontFamily } from '@/constants/theme';
+import { CatalogoGate } from '@/components/catalogo-gate';
 import { useAuth } from '@/state/auth';
 
 export default function ComercioLayout() {
@@ -8,13 +9,15 @@ export default function ComercioLayout() {
   // Comodidad de interfaz: el backend limita al comercio a su propio comercio_id (DEC-10).
   if (usuario?.rol !== 'COMERCIO' || !usuario.comercioId) return <Redirect href="/" />;
   return (
-    <Stack
-      screenOptions={{
-        headerTintColor: Colors.primary,
-        headerStyle: { backgroundColor: Colors.surface },
-        headerTitleStyle: { fontFamily: FontFamily.semiBold, color: Colors.onSurface },
-        contentStyle: { backgroundColor: Colors.surface },
-      }}
-    />
+    <CatalogoGate>
+      <Stack
+        screenOptions={{
+          headerTintColor: Colors.primary,
+          headerStyle: { backgroundColor: Colors.surface },
+          headerTitleStyle: { fontFamily: FontFamily.semiBold, color: Colors.onSurface },
+          contentStyle: { backgroundColor: Colors.surface },
+        }}
+      />
+    </CatalogoGate>
   );
 }

@@ -10,13 +10,14 @@ import { FilterChip, StatusChip } from '@/components/ui/chip';
 import { Screen, Section } from '@/components/ui/screen';
 import { EmptyState } from '@/components/ui/state-views';
 import { Colors, Radius, Spacing } from '@/constants/theme';
-import { comercios, productos } from '@/fixtures';
+import { useCatalogo } from '@/data';
 
 const TODAS = 'Todas';
-const categorias = [TODAS, ...Array.from(new Set(comercios.map((c) => c.categoria)))];
 
 export default function Explorar() {
   const [categoria, setCategoria] = useState(TODAS);
+  const { comercios, productos } = useCatalogo();
+  const categorias = [TODAS, ...Array.from(new Set(comercios.map((c) => c.categoria)))];
   const tiendas = categoria === TODAS ? comercios : comercios.filter((c) => c.categoria === categoria);
   const idsTiendas = new Set(tiendas.map((c) => c.id));
   const ofertas = productos.filter((p) => p.precioAnterior && idsTiendas.has(p.comercioId));

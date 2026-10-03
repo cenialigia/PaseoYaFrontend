@@ -18,8 +18,12 @@ export default function PerfilScreen() {
   const [mensaje, setMensaje] = useState('');
   const [enviado, setEnviado] = useState(false);
 
-  const enviar = () => {
-    reportar(mensaje.trim(), pedidoId);
+  const [error, setError] = useState(false);
+
+  const enviar = async () => {
+    const ok = await reportar(mensaje.trim(), pedidoId);
+    setError(!ok);
+    if (!ok) return;
     setMensaje('');
     setPedidoId(undefined);
     setEnviado(true);
@@ -47,6 +51,11 @@ export default function PerfilScreen() {
         </View>
         <TextField label="Descripción" value={mensaje} onChangeText={(t) => { setMensaje(t); setEnviado(false); }} multiline numberOfLines={4} style={styles.multiline} />
         <Button label="Enviar reporte" disabled={mensaje.trim().length < 5} onPress={enviar} />
+        {error ? (
+          <AppText variant="bodySm" color="error" accessibilityRole="alert">
+            No se pudo enviar el reporte. Intente de nuevo.
+          </AppText>
+        ) : null}
         {enviado ? (
           <AppText variant="bodySm" color="onSecondaryFixedVariant" accessibilityLiveRegion="polite">
             Reporte enviado. Gracias por avisarnos.
@@ -54,7 +63,7 @@ export default function PerfilScreen() {
         ) : null}
       </Section>
 
-      <Button label="Cerrar sesión" variant="outline" onPress={salir} />
+      <Button label="Cerrar sesión" variant="outline" onPress={() => void salir()} />
     </Screen>
   );
 }

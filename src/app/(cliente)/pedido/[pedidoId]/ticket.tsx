@@ -11,7 +11,7 @@ import { PriceText } from '@/components/ui/price-text';
 import { Screen } from '@/components/ui/screen';
 import { EmptyState, ErrorState } from '@/components/ui/state-views';
 import { Colors, Radius, Spacing } from '@/constants/theme';
-import { getComercio, getProducto, totalLineas } from '@/fixtures';
+import { getComercio, getProducto } from '@/data';
 import { useOrders } from '@/state/orders';
 
 export default function TicketScreen() {
@@ -78,7 +78,7 @@ export default function TicketScreen() {
               {l.cantidad} × {getProducto(l.productoId)?.nombre}
             </AppText>
           ))}
-          <PriceText amount={totalLineas(pedido.lineas)} />
+          <PriceText amount={pedido.total} />
         </View>
       </View>
 

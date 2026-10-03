@@ -1,56 +1,69 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import type { Session } from '@supabase/supabase-js';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
-// DEC-10: un solo rol por usuario. Esta sesión es simulada; la autorización real vive en el backend (RLS).
+import { supabase } from '@/lib/supabase';
+
+// DEC-10: un solo rol por usuario. El rol se lee de `perfiles`; la autorización real la imponen RLS y las funciones.
 export type Rol = 'CLIENTE' | 'COMERCIO' | 'ADMIN';
 
 export type Usuario = { id: string; nombre: string; email: string; rol: Rol; comercioId?: string };
 
-type Cuenta = Usuario & { password: string };
-
-// Cuentas ficticias de demostración (ver README). COMERCIO y ADMIN no se registran desde la app.
-const CUENTAS_DEMO: Cuenta[] = [
-  { id: 'usr-cliente', nombre: 'Cliente Demo', email: 'cliente@paseoya.demo', password: 'demo1234', rol: 'CLIENTE' },
-  { id: 'usr-techzone', nombre: 'TechZone', email: 'techzone@paseoya.demo', password: 'demo1234', rol: 'COMERCIO', comercioId: 'com-techzone' },
-  { id: 'usr-boutique', nombre: 'Boutique Aranjuez', email: 'boutique@paseoya.demo', password: 'demo1234', rol: 'COMERCIO', comercioId: 'com-moda' },
-  { id: 'usr-admin', nombre: 'Administración Paseo Aranjuez', email: 'admin@paseoya.demo', password: 'demo1234', rol: 'ADMIN' },
-];
-
-export type ErrorAuth = 'credenciales' | 'email-en-uso' | 'datos-invalidos';
+export type ErrorAuth = 'credenciales' | 'email-en-uso' | 'datos-invalidos' | 'red';
 
 type AuthContextValue = {
   usuario: Usuario | null;
-  ingresar: (email: string, password: string) => ErrorAuth | null;
-  registrarCliente: (nombre: string, email: string, password: string) => ErrorAuth | null;
-  salir: () => void;
+  cargando: boolean;
+  ingresar: (email: string, password: string) => Promise<ErrorAuth | null>;
+  registrarCliente: (nombre: string, email: string, password: string) => Promise<ErrorAuth | null>;
+  salir: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const sinPassword = ({ password: _password, ...u }: Cuenta): Usuario => u;
+async function cargarUsuario(session: Session | null): Promise<Usuario | null> {
+  if (!session) return null;
+  const { data, error } = await supabase.from('perfiles').select('id, nombre, rol, comercio_id').eq('id', session.user.id).single();
+  if (error || !data) return null;
+  return { id: data.id, nombre: data.nombre, email: session.user.email ?? '', rol: data.rol, comercioId: data.comercio_id ?? undefined };
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [cuentas, setCuentas] = useState<Cuenta[]>(CUENTAS_DEMO);
   const [usuario, setUsuario] = useState<Usuario | null>(null);
+  const [cargando, setCargando] = useState(true);
 
-  const ingresar = (email: string, password: string): ErrorAuth | null => {
-    const cuenta = cuentas.find((c) => c.email === email.trim().toLowerCase() && c.password === password);
-    if (!cuenta) return 'credenciales';
-    setUsuario(sinPassword(cuenta));
-    return null;
+  useEffect(() => {
+    supabase.auth.getSession().then(async ({ data }) => {
+      setUsuario(await cargarUsuario(data.session));
+      setCargando(false);
+    });
+    const { data } = supabase.auth.onAuthStateChange((_evento, session) => {
+      // Sin await dentro del callback: Supabase recomienda diferir llamadas a la API.
+      setTimeout(async () => setUsuario(await cargarUsuario(session)), 0);
+    });
+    return () => data.subscription.unsubscribe();
+  }, []);
+
+  const ingresar = async (email: string, password: string): Promise<ErrorAuth | null> => {
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+    if (!error) return null;
+    return error.status === 400 ? 'credenciales' : 'red';
   };
 
-  // Sólo el rol CLIENTE puede registrarse por sí mismo (DEC-10).
-  const registrarCliente = (nombre: string, email: string, password: string): ErrorAuth | null => {
+  // Sólo CLIENTE se registra por sí mismo; el trigger del servidor fija el rol (DEC-10).
+  const registrarCliente = async (nombre: string, email: string, password: string): Promise<ErrorAuth | null> => {
     const e = email.trim().toLowerCase();
     if (nombre.trim().length < 2 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) || password.length < 8) return 'datos-invalidos';
-    if (cuentas.some((c) => c.email === e)) return 'email-en-uso';
-    const cuenta: Cuenta = { id: `usr-${Date.now()}`, nombre: nombre.trim(), email: e, password, rol: 'CLIENTE' };
-    setCuentas((cs) => [...cs, cuenta]);
-    setUsuario(sinPassword(cuenta));
-    return null;
+    const { error } = await supabase.auth.signUp({ email: e, password, options: { data: { nombre: nombre.trim() } } });
+    if (!error) return null;
+    if (error.code === 'user_already_exists' || error.status === 422) return 'email-en-uso';
+    return 'red';
   };
 
-  return <AuthContext.Provider value={{ usuario, ingresar, registrarCliente, salir: () => setUsuario(null) }}>{children}</AuthContext.Provider>;
+  const salir = async () => {
+    await supabase.auth.signOut();
+  };
+
+  return <AuthContext.Provider value={{ usuario, cargando, ingresar, registrarCliente, salir }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth(): AuthContextValue {
@@ -63,6 +76,7 @@ export const mensajeAuth: Record<ErrorAuth, string> = {
   credenciales: 'Correo o contraseña incorrectos.',
   'email-en-uso': 'Ya existe una cuenta con ese correo.',
   'datos-invalidos': 'Revise los datos: nombre de al menos 2 letras, correo válido y contraseña de 8 caracteres o más.',
+  red: 'No se pudo conectar con el servidor. Intente de nuevo.',
 };
 
 export function rutaInicial(rol: Rol): '/explorar' | '/panel' | '/admin' {

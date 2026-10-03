@@ -1,6 +1,6 @@
 import { createContext, useContext, useReducer, type ReactNode } from 'react';
 
-import { carritos as carritosIniciales, getComercio, getProducto, type Carrito, type Linea } from '@/fixtures';
+import { getComercio, getProducto, type Carrito, type Linea } from '@/data';
 
 // DEC-06: el carrito vence 4 h (tiempo corrido) después de su última modificación.
 const PLAZO_CARRITO_MS = 4 * 60 * 60 * 1000;
@@ -80,7 +80,7 @@ type CartContextValue = {
 const CartContext = createContext<CartContextValue | null>(null);
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [carritos, dispatch] = useReducer(reducer, carritosIniciales);
+  const [carritos, dispatch] = useReducer(reducer, [] as Carrito[]);
 
   const cantidadEnCarrito = (productoId: string, ahora: number) => {
     const producto = getProducto(productoId);

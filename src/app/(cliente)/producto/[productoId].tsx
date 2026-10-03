@@ -10,7 +10,7 @@ import { QuantityStepper } from '@/components/ui/quantity-stepper';
 import { Screen } from '@/components/ui/screen';
 import { ErrorState } from '@/components/ui/state-views';
 import { Colors, Radius, Spacing } from '@/constants/theme';
-import { getComercio, getProducto } from '@/fixtures';
+import { getComercio, getProducto } from '@/data';
 import { useNow } from '@/hooks/use-now';
 import { motivoNoAgregado, useCart } from '@/state/cart';
 
