@@ -2,14 +2,14 @@ import { createContext, useContext, useReducer, type ReactNode } from 'react';
 
 import { carritos as carritosIniciales, getComercio, getProducto, type Carrito, type Linea } from '@/fixtures';
 
-// Plazo ilustrativo de un carrito nuevo; la regla real espera DEC-06.
+// DEC-06: el carrito vence 4 h (tiempo corrido) después de su última modificación.
 const PLAZO_CARRITO_MS = 4 * 60 * 60 * 1000;
 
 export type AddResult = { ok: true; carritoId: string } | { ok: false; reason: 'agotado' | 'sin-stock' | 'cerrado' | 'no-existe' };
 
 type Action =
   | { type: 'add'; productoId: string; cantidad: number; ahora: number }
-  | { type: 'setCantidad'; carritoId: string; productoId: string; cantidad: number }
+  | { type: 'setCantidad'; carritoId: string; productoId: string; cantidad: number; ahora: number }
   | { type: 'eliminarCarrito'; carritoId: string }
   | { type: 'recuperar'; carritoId: string; lineas: Linea[]; ahora: number };
 
@@ -29,7 +29,7 @@ function reducer(state: Carrito[], action: Action): Carrito[] {
       const lineas = existe
         ? actual.lineas.map((l) => (l.productoId === producto.id ? { ...l, cantidad: l.cantidad + action.cantidad } : l))
         : [...actual.lineas, { productoId: producto.id, cantidad: action.cantidad }];
-      return state.map((c) => (c.id === actual.id ? { ...c, lineas } : c));
+      return state.map((c) => (c.id === actual.id ? { ...c, lineas, expiraEn: action.ahora + PLAZO_CARRITO_MS } : c));
     }
     case 'setCantidad': {
       // Sólo toca el carrito indicado: editar uno nunca modifica otro.
@@ -40,7 +40,7 @@ function reducer(state: Carrito[], action: Action): Carrito[] {
             action.cantidad <= 0
               ? c.lineas.filter((l) => l.productoId !== action.productoId)
               : c.lineas.map((l) => (l.productoId === action.productoId ? { ...l, cantidad: action.cantidad } : l));
-          return { ...c, lineas };
+          return { ...c, lineas, expiraEn: action.ahora + PLAZO_CARRITO_MS };
         })
         .filter((c) => c.lineas.length > 0);
     }
@@ -102,7 +102,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const cambiarCantidad = (carritoId: string, productoId: string, cantidad: number) =>
-    dispatch({ type: 'setCantidad', carritoId, productoId, cantidad });
+    dispatch({ type: 'setCantidad', carritoId, productoId, cantidad, ahora: Date.now() });
 
   const eliminarCarrito = (carritoId: string) => dispatch({ type: 'eliminarCarrito', carritoId });
 
