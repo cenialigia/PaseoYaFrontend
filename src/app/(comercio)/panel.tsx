@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -41,6 +41,7 @@ export default function PanelComercio() {
       <AppText variant="bodySm" color="onSurfaceVariant">
         Panel de comercio · {comercio?.local} · {comercio?.piso}
       </AppText>
+      <Button label="Gestionar mi catálogo" variant="outline" onPress={() => router.push('/catalogo')} />
       <View style={styles.ventas} accessible accessibilityLabel={`Ventas entregadas: ${formatPrice(ventas)} en ${entregados.length} pedidos`}>
         <AppText variant="label" color="onPrimaryFixedVariant">
           Ventas entregadas

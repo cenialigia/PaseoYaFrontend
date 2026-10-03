@@ -10,7 +10,12 @@ type Props = { title?: string; children: ReactNode };
 // Con `title` dibuja el encabezado de marca (pestañas); sin él, la pantalla usa el header nativo de la pila.
 export function Screen({ title, children }: Props) {
   return (
-    <ScrollView style={styles.scroll} contentContainerStyle={styles.content} stickyHeaderIndices={title ? [0] : undefined}>
+    // keyboardShouldPersistTaps: con el teclado abierto, el primer toque en un botón debe ejecutarlo, no sólo cerrar el teclado.
+    <ScrollView
+      style={styles.scroll}
+      contentContainerStyle={styles.content}
+      stickyHeaderIndices={title ? [0] : undefined}
+      keyboardShouldPersistTaps="handled">
       {title ? <AppHeader title={title} /> : null}
       <View style={styles.body}>{children}</View>
     </ScrollView>
