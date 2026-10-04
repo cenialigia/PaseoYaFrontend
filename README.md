@@ -38,7 +38,7 @@ Vienen del seed del backend (`npm run db:reset` las restablece). Contraseña de 
 | Comercio (TechStore) | `techstore@paseoya.demo` | Inicio, Pedidos, Productos, Ventas |
 | Comercio (Fashion Store) | `fashion@paseoya.demo` | Igual que el anterior |
 | Comercio (Sabor Criollo) | `saborcriollo@paseoya.demo` | Igual que el anterior |
-| Admin Paseo Aranjuez | `admin@paseoya.demo` | Supervisión |
+| Admin Paseo Aranjuez | `admin@paseoya.demo` | Inicio, Comercios, Usuarios, Pedidos, Más |
 
 También se puede crear una cuenta de cliente desde «Crear cuenta» (con foto de perfil opcional). «¿Olvidaste tu contraseña?» envía un código de 6 dígitos; en local el correo llega a Mailpit (http://127.0.0.1:54324).
 
@@ -50,7 +50,7 @@ Antes de empezar: `npm run db:reset` en el backend deja el seed limpio. Ideal: u
 2. **Comercio (TechStore):** la campana avisa del pedido nuevo → Pedidos → abrir el pedido → «Empezar preparación» → «Marcar como listo» (cada paso pide confirmación). En el teléfono del cliente el estado cambia solo.
 3. **Cliente:** Mis pedidos → Reservas → «Ver ticket» → QR + PIN. La campana muestra cada cambio de estado.
 4. **Comercio:** «Gestionar retiro» (o «Escanear retiro» en Inicio) → leer el QR del ticket con la cámara o «Escribir PIN» → se verifica sin gastar el código → «Confirmar cobro en efectivo» → «Confirmar entrega». Un PIN incorrecto o ya usado se rechaza. En el teléfono del cliente el ticket pasa a «ya se usó».
-5. **Admin:** ventas, pedidos por estado, comercios y reportes.
+5. **Admin:** Inicio con ventas del día y promociones por revisar → aprobar o rechazar (Más → Promociones) → alta de un comercio con su cuenta (Comercios → «Nuevo comercio») → desactivar un usuario → auditoría de cada acción.
 6. Variante QR: elegir «Pagar con QR (simulado)»; el QR vence en 5 minutos y «Simular pago» lo confirma. Los audífonos tienen 40 % de descuento: el servidor fija Bs 180,00 al confirmar.
 
 En Expo Go, el botón flotante de herramientas (engranaje) puede tapar «Perfil»: arrástrelo a otro borde.

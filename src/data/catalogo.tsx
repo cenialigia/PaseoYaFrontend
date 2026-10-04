@@ -45,6 +45,7 @@ type FilaComercio = {
   piso: string;
   categoria_id: string;
   abierto: boolean;
+  activo: boolean;
   descripcion: string | null;
   horario: string | null;
   imagen_path: string | null;
@@ -66,7 +67,7 @@ async function obtenerCatalogo(): Promise<Estado> {
   const ahora = new Date().toISOString();
   const [k, c, p, pm] = await Promise.all([
     supabase.from('categorias').select('id, nombre, icono').eq('activa', true).order('orden'),
-    supabase.from('comercios').select('id, nombre, local, piso, categoria_id, abierto, descripcion, horario, imagen_path, categorias(nombre)').order('nombre'),
+    supabase.from('comercios').select('id, nombre, local, piso, categoria_id, abierto, activo, descripcion, horario, imagen_path, categorias(nombre)').order('nombre'),
     supabase.from('productos').select('id, comercio_id, nombre, precio, precio_anterior, stock, descripcion, imagen_path').eq('activo', true).order('nombre'),
     supabase.from('promociones').select('id, producto_id, porcentaje, fin').eq('estado', 'APROBADA').lte('inicio', ahora).gte('fin', ahora),
   ]);
@@ -84,6 +85,7 @@ async function obtenerCatalogo(): Promise<Estado> {
     categoriaId: r.categoria_id,
     categoria: r.categorias?.nombre ?? '',
     abierto: r.abierto,
+    activo: r.activo,
     descripcion: r.descripcion ?? undefined,
     horario: r.horario ?? undefined,
     imagenUrl: urlImagen(r.imagen_path),

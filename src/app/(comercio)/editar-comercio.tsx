@@ -44,7 +44,7 @@ export default function EditarComercio() {
   const sinGuardar = JSON.stringify(form) !== JSON.stringify(original);
   const cambiar = (campo: 'descripcion' | 'horario') => (t: string) => {
     setMensaje(null);
-    setForm({ ...form, [campo]: t });
+    setForm((x) => (x ? { ...x, [campo]: t } : x));
   };
 
   const guardar = async () => {
@@ -84,7 +84,7 @@ export default function EditarComercio() {
         </View>
         <Switch
           value={form.abierto}
-          onValueChange={(abierto) => setForm({ ...form, abierto })}
+          onValueChange={(abierto) => setForm((x) => (x ? { ...x, abierto } : x))}
           accessibilityLabel="Tienda abierta"
           trackColor={{ true: Colors.secondary, false: Colors.outlineVariant }}
           thumbColor={Colors.surfaceContainerLowest}
@@ -92,7 +92,7 @@ export default function EditarComercio() {
       </View>
       <TextField label="Descripción" value={form.descripcion} onChangeText={cambiar('descripcion')} multiline maxLength={200} style={styles.multiline} />
       <TextField label="Horario de atención" value={form.horario} onChangeText={cambiar('horario')} maxLength={120} ayuda="Por ejemplo: Lun a dom · 10:00 a 22:00" />
-      <SelectorFoto etiqueta="Foto de la tienda" carpeta={comercioId} path={form.imagenPath} onChange={(imagenPath) => setForm({ ...form, imagenPath })} />
+      <SelectorFoto etiqueta="Foto de la tienda" carpeta={comercioId} path={form.imagenPath} onChange={(imagenPath) => setForm((x) => (x ? { ...x, imagenPath } : x))} />
       <Button label="Guardar cambios" disabled={!sinGuardar} loading={guardando} onPress={guardar} />
       <Button label="Volver" variant="ghost" disabled={guardando} onPress={volver} />
       {mensaje ? (

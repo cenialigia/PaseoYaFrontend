@@ -51,6 +51,7 @@ const OrdersContext = createContext<OrdersContextValue | null>(null);
 type FilaPedido = {
   id: string;
   codigo: string;
+  cliente_id: string;
   comercio_id: string;
   estado: EstadoPedido;
   metodo_pago: MetodoPago;
@@ -58,6 +59,8 @@ type FilaPedido = {
   total: number | string;
   confirmado_en: string;
   vence_en: string;
+  // Sólo el admin recibe el nombre (RLS de perfiles); para los demás llega null.
+  perfiles?: { nombre: string } | null;
   pedido_lineas: { producto_id: string; cantidad: number; precio_unitario: number | string; productos?: { nombre: string } | null }[];
 };
 
@@ -65,6 +68,8 @@ function aPedido(f: FilaPedido, pines: Map<string, string>): Pedido {
   return {
     id: f.id,
     codigo: f.codigo,
+    clienteId: f.cliente_id,
+    clienteNombre: f.perfiles?.nombre,
     comercioId: f.comercio_id,
     estado: f.estado,
     pago: { metodo: f.metodo_pago, estado: f.estado_pago },
@@ -81,7 +86,7 @@ function aPedido(f: FilaPedido, pines: Map<string, string>): Pedido {
   };
 }
 
-const SELECT_PEDIDO = 'id, codigo, comercio_id, estado, metodo_pago, estado_pago, total, confirmado_en, vence_en, pedido_lineas(producto_id, cantidad, precio_unitario, productos(nombre))';
+const SELECT_PEDIDO = 'id, codigo, cliente_id, perfiles(nombre), comercio_id, estado, metodo_pago, estado_pago, total, confirmado_en, vence_en, pedido_lineas(producto_id, cantidad, precio_unitario, productos(nombre))';
 
 type DatosPedidos = { pedidos: Pedido[]; reportes: Reporte[] };
 

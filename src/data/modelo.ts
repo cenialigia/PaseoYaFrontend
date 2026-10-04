@@ -10,6 +10,8 @@ export type Comercio = {
   categoriaId: string;
   categoria: string;
   abierto: boolean;
+  // El cliente sólo recibe comercios activos (RLS); el admin ve también los inactivos.
+  activo: boolean;
   descripcion?: string;
   horario?: string;
   imagenUrl?: string;
@@ -43,6 +45,8 @@ export type EstadoPago = 'PENDING' | 'PAID' | 'REFUNDED' | 'RETAINED';
 export type Pedido = {
   id: string;
   codigo: string;
+  clienteId?: string;
+  clienteNombre?: string;
   comercioId: string;
   lineas: Linea[];
   estado: EstadoPedido;

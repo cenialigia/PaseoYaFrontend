@@ -13,12 +13,12 @@ import { useNow } from '@/hooks/use-now';
 import { haceCuanto } from '@/lib/format';
 import { useNotificaciones, type Notificacion } from '@/state/notificaciones';
 
-type Vista = 'todas' | 'pedido' | 'pago';
+type Vista = 'todas' | 'pedido' | 'pago' | 'promocion';
 
-const icono: Record<string, keyof typeof MaterialIcons.glyphMap> = { pedido: 'receipt-long', pago: 'check-circle' };
+const icono: Record<string, keyof typeof MaterialIcons.glyphMap> = { pedido: 'receipt-long', pago: 'check-circle', promocion: 'local-offer' };
 
 // CLI-25 / COM-14 · Notificaciones (DEC-F14-05): las genera el servidor; tocar una la marca como leída y abre su pedido.
-export function ListaAvisos({ alAbrirPedido, vacio }: { alAbrirPedido: (pedidoId: string) => void; vacio: string }) {
+export function ListaAvisos({ alAbrir, vacio }: { alAbrir: (n: Notificacion) => void; vacio: string }) {
   const { lista, noLeidas, marcarLeida, marcarTodas } = useNotificaciones();
   const [vista, setVista] = useState<Vista>('todas');
   const ahora = useNow();
@@ -26,7 +26,7 @@ export function ListaAvisos({ alAbrirPedido, vacio }: { alAbrirPedido: (pedidoId
 
   const abrir = (n: Notificacion) => {
     void marcarLeida(n.id);
-    if (n.pedidoId) alAbrirPedido(n.pedidoId);
+    alAbrir(n);
   };
 
   return (
@@ -36,6 +36,9 @@ export function ListaAvisos({ alAbrirPedido, vacio }: { alAbrirPedido: (pedidoId
         <FilterChip label="Todas" selected={vista === 'todas'} onPress={() => setVista('todas')} />
         <FilterChip label="Pedidos" selected={vista === 'pedido'} onPress={() => setVista('pedido')} />
         <FilterChip label="Pagos" selected={vista === 'pago'} onPress={() => setVista('pago')} />
+        {lista.some((n) => n.tipo === 'promocion') ? (
+          <FilterChip label="Promociones" selected={vista === 'promocion'} onPress={() => setVista('promocion')} />
+        ) : null}
       </View>
       {visibles.length === 0 ? (
         <EmptyState title="No tienes notificaciones" message={vacio} />

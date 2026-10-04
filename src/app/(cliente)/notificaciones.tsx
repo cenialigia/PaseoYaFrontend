@@ -6,7 +6,7 @@ export default function Notificaciones() {
   return (
     <ListaAvisos
       vacio="Te avisaremos cuando tu pedido cambie de estado."
-      alAbrirPedido={(pedidoId) => router.push({ pathname: '/pedido/[pedidoId]/detalle', params: { pedidoId } })}
+      alAbrir={(n) => n.pedidoId && router.push({ pathname: '/pedido/[pedidoId]/detalle', params: { pedidoId: n.pedidoId } })}
     />
   );
 }
