@@ -42,13 +42,13 @@ async function obtener(): Promise<Notificacion[] | null> {
   }));
 }
 
-// DEC-F14-05: las genera el servidor al cambiar un pedido; aquí sólo se leen y se marcan como leídas (Realtime).
+// DEC-F14-05: las genera el servidor al cambiar un pedido (cliente y comercio); aquí sólo se leen y se marcan como leídas (Realtime).
 export function NotificacionesProvider({ children }: { children: ReactNode }) {
   const { usuario } = useAuth();
   const [lista, setLista] = useState<Notificacion[]>([]);
 
   useEffect(() => {
-    if (usuario?.rol !== 'CLIENTE') return;
+    if (!usuario || usuario.rol === 'ADMIN') return;
     let activo = true;
     const refrescar = () => {
       obtener().then((n) => {

@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 
 import type { Categoria, Comercio, Linea, Producto, Promocion } from '@/data/modelo';
+import { urlImagen } from '@/lib/imagenes';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/state/auth';
 
@@ -25,10 +26,6 @@ export function aplicarDescuento(precio: number, porcentaje: number): number {
   return Math.round(precio * (100 - porcentaje)) / 100;
 }
 
-function urlImagen(path: string | null): string | undefined {
-  return path ? supabase.storage.from('imagenes').getPublicUrl(path).data.publicUrl : undefined;
-}
-
 type Estado = {
   categorias: Categoria[];
   comercios: Comercio[];
@@ -49,6 +46,7 @@ type FilaComercio = {
   categoria_id: string;
   abierto: boolean;
   descripcion: string | null;
+  horario: string | null;
   imagen_path: string | null;
   categorias: { nombre: string } | null;
 };
@@ -68,7 +66,7 @@ async function obtenerCatalogo(): Promise<Estado> {
   const ahora = new Date().toISOString();
   const [k, c, p, pm] = await Promise.all([
     supabase.from('categorias').select('id, nombre, icono').eq('activa', true).order('orden'),
-    supabase.from('comercios').select('id, nombre, local, piso, categoria_id, abierto, descripcion, imagen_path, categorias(nombre)').order('nombre'),
+    supabase.from('comercios').select('id, nombre, local, piso, categoria_id, abierto, descripcion, horario, imagen_path, categorias(nombre)').order('nombre'),
     supabase.from('productos').select('id, comercio_id, nombre, precio, precio_anterior, stock, descripcion, imagen_path').eq('activo', true).order('nombre'),
     supabase.from('promociones').select('id, producto_id, porcentaje, fin').eq('estado', 'APROBADA').lte('inicio', ahora).gte('fin', ahora),
   ]);
@@ -87,6 +85,7 @@ async function obtenerCatalogo(): Promise<Estado> {
     categoria: r.categorias?.nombre ?? '',
     abierto: r.abierto,
     descripcion: r.descripcion ?? undefined,
+    horario: r.horario ?? undefined,
     imagenUrl: urlImagen(r.imagen_path),
   }));
   const productos: Producto[] = (p.data as FilaProducto[]).map((r) => {

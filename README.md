@@ -35,9 +35,9 @@ Vienen del seed del backend (`npm run db:reset` las restablece). Contraseña de 
 | --- | --- | --- |
 | Cliente (María Fernanda) | `cliente@paseoya.demo` | Inicio, Mis pedidos, Promociones, Perfil |
 | Cliente 2 | `cliente2@paseoya.demo` | Igual que el anterior |
-| Comercio (TechStore) | `techstore@paseoya.demo` | Panel de comercio |
-| Comercio (Fashion Store) | `fashion@paseoya.demo` | Panel de comercio |
-| Comercio (Sabor Criollo) | `saborcriollo@paseoya.demo` | Panel de comercio |
+| Comercio (TechStore) | `techstore@paseoya.demo` | Inicio, Pedidos, Productos, Ventas |
+| Comercio (Fashion Store) | `fashion@paseoya.demo` | Igual que el anterior |
+| Comercio (Sabor Criollo) | `saborcriollo@paseoya.demo` | Igual que el anterior |
 | Admin Paseo Aranjuez | `admin@paseoya.demo` | Supervisión |
 
 También se puede crear una cuenta de cliente desde «Crear cuenta» (con foto de perfil opcional). «¿Olvidaste tu contraseña?» envía un código de 6 dígitos; en local el correo llega a Mailpit (http://127.0.0.1:54324).
@@ -47,9 +47,9 @@ También se puede crear una cuenta de cliente desde «Crear cuenta» (con foto d
 Antes de empezar: `npm run db:reset` en el backend deja el seed limpio. Ideal: un teléfono como **cliente** y un emulador o segundo teléfono como **comercio**; los cambios se ven en tiempo real en ambos.
 
 1. **Cliente:** Inicio → Tecnología → TechStore → «Agregar al carrito» en el cargador → carrito → «Continuar» → «Pagar en efectivo» → «Continuar» (reserva de 72 h).
-2. **Comercio (TechStore):** el pedido aparece solo en «Por atender» → «Iniciar preparación» → «Marcar listo para retiro». En el teléfono del cliente el estado cambia solo.
+2. **Comercio (TechStore):** la campana avisa del pedido nuevo → Pedidos → abrir el pedido → «Empezar preparación» → «Marcar como listo» (cada paso pide confirmación). En el teléfono del cliente el estado cambia solo.
 3. **Cliente:** Mis pedidos → Reservas → «Ver ticket» → QR + PIN. La campana muestra cada cambio de estado.
-4. **Comercio:** Listos → «Confirmar pago en efectivo» → escribir el PIN → «Validar retiro». Un PIN incorrecto se rechaza. En el teléfono del cliente el ticket pasa a «ya se usó».
+4. **Comercio:** «Gestionar retiro» (o «Escanear retiro» en Inicio) → leer el QR del ticket con la cámara o «Escribir PIN» → se verifica sin gastar el código → «Confirmar cobro en efectivo» → «Confirmar entrega». Un PIN incorrecto o ya usado se rechaza. En el teléfono del cliente el ticket pasa a «ya se usó».
 5. **Admin:** ventas, pedidos por estado, comercios y reportes.
 6. Variante QR: elegir «Pagar con QR (simulado)»; el QR vence en 5 minutos y «Simular pago» lo confirma. Los audífonos tienen 40 % de descuento: el servidor fija Bs 180,00 al confirmar.
 

@@ -11,6 +11,7 @@ export type Comercio = {
   categoria: string;
   abierto: boolean;
   descripcion?: string;
+  horario?: string;
   imagenUrl?: string;
 };
 
@@ -30,7 +31,8 @@ export type Producto = {
 export type Promocion = { id: string; productoId: string; porcentaje: number; fin: string };
 
 // precioUnitario sólo existe en pedidos (precio congelado al confirmar).
-export type Linea = { productoId: string; cantidad: number; precioUnitario?: number };
+// En pedidos también llega el nombre, para mostrar productos ya desactivados.
+export type Linea = { productoId: string; cantidad: number; precioUnitario?: number; nombre?: string };
 
 export type Carrito = { id: string; comercioId: string; lineas: Linea[]; expiraEn: number };
 
@@ -72,4 +74,9 @@ export function etiquetaPago(pedido: Pick<Pedido, 'pago' | 'estado'>): string {
   if (estado === 'CANCELLED' && pago.estado !== 'PAID') return 'Sin pago (pedido cancelado)';
   if (pago.metodo === 'QR_SIMULADO') return pago.estado === 'PAID' ? 'Pago QR simulado confirmado' : 'QR de pago pendiente (simulado)';
   return pago.estado === 'PAID' ? 'Efectivo cobrado' : 'Efectivo al retirar';
+}
+
+// DEC-F14-11: una venta es un pedido con el pago hecho (QR simulado pagado o efectivo cobrado); las reservas sin cobrar no cuentan.
+export function esVenta(pedido: Pick<Pedido, 'pago'>): boolean {
+  return pedido.pago.estado === 'PAID' || pedido.pago.estado === 'RETAINED';
 }

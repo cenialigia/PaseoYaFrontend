@@ -13,7 +13,21 @@ export class CheckoutError extends Error {
 
 export type Reporte = { id: string; pedidoId?: string; mensaje: string; creadoEn: number };
 
-export type ResultadoValidacion = 'ok' | 'pin-incorrecto' | 'no-listo' | 'ajeno' | 'pago-pendiente' | 'red';
+// DEC-F14-14: verificar no consume el código; «Confirmar entrega» lo consume y entrega en una sola operación.
+export type ResultadoRetiro =
+  | 'ok'
+  | 'pin-incorrecto'
+  | 'no-listo'
+  | 'usado'
+  | 'vencido'
+  | 'cancelado'
+  | 'ajeno'
+  | 'otro-pedido'
+  | 'codigo-invalido'
+  | 'pago-pendiente'
+  | 'red';
+
+export type Verificacion = { resultado: ResultadoRetiro; pedidoId?: string; pagoPendiente?: boolean };
 
 type CrearPedidoInput = { carrito: Carrito; metodo: MetodoPago; claveIdempotencia: string };
 
@@ -27,7 +41,8 @@ type OrdersContextValue = {
   cancelar: (pedidoId: string) => Promise<boolean>;
   avanzar: (pedidoId: string) => Promise<boolean>;
   confirmarEfectivo: (pedidoId: string) => Promise<boolean>;
-  validarRetiro: (pedidoId: string, pin: string) => Promise<ResultadoValidacion>;
+  verificarRetiro: (codigo: string, pedidoId?: string) => Promise<Verificacion>;
+  confirmarEntrega: (pedidoId: string, codigo: string) => Promise<ResultadoRetiro>;
   reportar: (mensaje: string, pedidoId?: string) => Promise<boolean>;
 };
 
@@ -43,7 +58,7 @@ type FilaPedido = {
   total: number | string;
   confirmado_en: string;
   vence_en: string;
-  pedido_lineas: { producto_id: string; cantidad: number; precio_unitario: number | string }[];
+  pedido_lineas: { producto_id: string; cantidad: number; precio_unitario: number | string; productos?: { nombre: string } | null }[];
 };
 
 function aPedido(f: FilaPedido, pines: Map<string, string>): Pedido {
@@ -56,12 +71,17 @@ function aPedido(f: FilaPedido, pines: Map<string, string>): Pedido {
     total: Number(f.total),
     confirmadoEn: Date.parse(f.confirmado_en),
     venceEn: Date.parse(f.vence_en),
-    lineas: f.pedido_lineas.map((l) => ({ productoId: l.producto_id, cantidad: l.cantidad, precioUnitario: Number(l.precio_unitario) })),
+    lineas: f.pedido_lineas.map((l) => ({
+      productoId: l.producto_id,
+      cantidad: l.cantidad,
+      precioUnitario: Number(l.precio_unitario),
+      nombre: l.productos?.nombre,
+    })),
     pin: pines.get(f.id),
   };
 }
 
-const SELECT_PEDIDO = 'id, codigo, comercio_id, estado, metodo_pago, estado_pago, total, confirmado_en, vence_en, pedido_lineas(producto_id, cantidad, precio_unitario)';
+const SELECT_PEDIDO = 'id, codigo, comercio_id, estado, metodo_pago, estado_pago, total, confirmado_en, vence_en, pedido_lineas(producto_id, cantidad, precio_unitario, productos(nombre))';
 
 type DatosPedidos = { pedidos: Pedido[]; reportes: Reporte[] };
 
@@ -78,7 +98,7 @@ async function obtenerPedidos(rol: string): Promise<DatosPedidos | null> {
   if (p.error) return null;
   const pines = new Map((c.data ?? []).map((x) => [x.pedido_id as string, x.pin as string]));
   return {
-    pedidos: (p.data as FilaPedido[]).map((f) => aPedido(f, pines)),
+    pedidos: (p.data as unknown as FilaPedido[]).map((f) => aPedido(f, pines)),
     reportes: (r.data ?? []).map((x: { id: string; pedido_id: string | null; mensaje: string; creado_en: string }) => ({
       id: x.id,
       pedidoId: x.pedido_id ?? undefined,
@@ -165,10 +185,17 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
 
   const confirmarEfectivo = async (pedidoId: string) => !(await rpc('confirmar_efectivo', { p_pedido: pedidoId })).error;
 
-  const validarRetiro = async (pedidoId: string, pin: string): Promise<ResultadoValidacion> => {
-    const { data, error } = await rpc('validar_retiro', { p_pedido: pedidoId, p_pin: pin.trim() });
-    if (error) return 'red';
-    return data as ResultadoValidacion;
+  // El servidor valida el QR («paseoya:retiro:<pedido>:<pin>») o el PIN; nunca se confía en el texto escaneado.
+  const verificarRetiro = async (codigo: string, pedidoId?: string): Promise<Verificacion> => {
+    const { data, error } = await supabase.rpc('verificar_retiro', { p_codigo: codigo.trim(), p_pedido: pedidoId ?? null });
+    if (error || !data) return { resultado: 'red' };
+    const r = data as { resultado: ResultadoRetiro; pedido_id?: string; pago_pendiente?: boolean };
+    return { resultado: r.resultado, pedidoId: r.pedido_id, pagoPendiente: r.pago_pendiente };
+  };
+
+  const confirmarEntrega = async (pedidoId: string, codigo: string): Promise<ResultadoRetiro> => {
+    const { data, error } = await rpc('confirmar_entrega', { p_pedido: pedidoId, p_codigo: codigo.trim() });
+    return error ? 'red' : (data as ResultadoRetiro);
   };
 
   const reportar = async (mensaje: string, pedidoId?: string) => {
@@ -179,7 +206,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
 
   return (
     <OrdersContext.Provider
-      value={{ pedidos, reportes, cargando, recargar, crearPedido, simularPago, cancelar, avanzar, confirmarEfectivo, validarRetiro, reportar }}>
+      value={{ pedidos, reportes, cargando, recargar, crearPedido, simularPago, cancelar, avanzar, confirmarEfectivo, verificarRetiro, confirmarEntrega, reportar }}>
       {children}
     </OrdersContext.Provider>
   );
@@ -198,11 +225,16 @@ export const mensajeCheckoutError: Record<CheckoutError['motivo'], string> = {
   vencido: 'Tu carrito venció. Vuelve a agregar los productos.',
 };
 
-export const mensajeValidacion: Record<ResultadoValidacion, string> = {
-  ok: 'Retiro validado. El pedido quedó como entregado.',
-  'pin-incorrecto': 'El PIN no coincide. Verifique el código del cliente.',
-  'no-listo': 'El pedido no está listo para retiro o ya fue entregado.',
-  ajeno: 'Este pedido no pertenece a su comercio.',
-  'pago-pendiente': 'El pago está pendiente. Confirme el efectivo o espere el pago simulado antes de entregar.',
+export const mensajeRetiro: Record<ResultadoRetiro, string> = {
+  ok: 'Código válido. Revisa el pedido y confirma la entrega.',
+  'pin-incorrecto': 'El código no coincide con ningún pedido listo de tu tienda. Pide al cliente que lo revise.',
+  'no-listo': 'Este pedido todavía no está listo para retiro.',
+  usado: 'Este código ya se usó: el pedido fue entregado.',
+  vencido: 'El pedido venció sin retirarse.',
+  cancelado: 'El pedido fue cancelado.',
+  ajeno: 'Este código no pertenece a tu tienda.',
+  'otro-pedido': 'El código es de otro pedido. Revisa que sea el ticket correcto.',
+  'codigo-invalido': 'No es un código de recojo de PaseoYa. Escanea el QR del ticket o escribe el PIN de 6 dígitos.',
+  'pago-pendiente': 'El pago está pendiente: cobra el efectivo o espera el pago simulado antes de entregar.',
   red: 'No se pudo conectar con el servidor. Intenta de nuevo.',
 };
