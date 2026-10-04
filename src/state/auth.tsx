@@ -35,6 +35,7 @@ type AuthContextValue = {
   registrarCliente: (datos: DatosRegistro) => Promise<ErrorAuth | null>;
   actualizarPerfil: (datos: DatosPerfil) => Promise<boolean>;
   subirAvatar: (base64: string, mime: string) => Promise<boolean>;
+  quitarAvatar: () => Promise<boolean>;
   urlAvatar: () => Promise<string | null>;
   enviarCodigoRecuperacion: (email: string) => Promise<ErrorAuth | null>;
   restablecerContrasena: (email: string, codigo: string, nueva: string) => Promise<ErrorAuth | null>;
@@ -140,6 +141,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Borra la foto del bucket y del perfil; si el archivo ya no existía, igual se limpia el perfil.
+  const quitarAvatar = async (): Promise<boolean> => {
+    if (!usuario?.avatarPath) return true;
+    await supabase.storage.from('avatares').remove([usuario.avatarPath]);
+    const { error } = await supabase.from('perfiles').update({ avatar_path: null }).eq('id', usuario.id);
+    if (error) return false;
+    await recargarUsuario();
+    return true;
+  };
+
   const urlAvatar = async (): Promise<string | null> => {
     if (!usuario?.avatarPath) return null;
     const { data } = await supabase.storage.from('avatares').createSignedUrl(usuario.avatarPath, 3600);
@@ -177,6 +188,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         registrarCliente,
         actualizarPerfil,
         subirAvatar,
+        quitarAvatar,
         urlAvatar,
         enviarCodigoRecuperacion,
         restablecerContrasena,

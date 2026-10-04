@@ -1,7 +1,7 @@
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/avatar';
@@ -10,9 +10,9 @@ import { Button } from '@/components/ui/button';
 import { Colors, Spacing } from '@/constants/theme';
 import { useAuth } from '@/state/auth';
 
-// CLI-04 · Foto de perfil opcional (DEC-F14-08/16): cámara o galería, vista previa en el avatar y «Omitir».
+// CLI-04 · Foto de perfil opcional (DEC-F14-08/16): cámara o galería, vista previa en el avatar, «Quitar foto» y «Omitir».
 export default function FotoPerfil() {
-  const { subirAvatar, terminarFoto, pendienteFoto } = useAuth();
+  const { usuario, subirAvatar, quitarAvatar, terminarFoto, pendienteFoto } = useAuth();
   const insets = useSafeAreaInsets();
   const [subiendo, setSubiendo] = useState(false);
   const [mensaje, setMensaje] = useState<string | null>(null);
@@ -40,6 +40,21 @@ export default function FotoPerfil() {
     setMensaje(ok ? 'Foto guardada.' : 'No se pudo subir la foto. Intenta de nuevo.');
   };
 
+  const quitar = () =>
+    Alert.alert('¿Quitar tu foto?', 'Se borrará de PaseoYa. Puedes subir otra cuando quieras.', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Quitar',
+        style: 'destructive',
+        onPress: async () => {
+          setSubiendo(true);
+          const ok = await quitarAvatar();
+          setSubiendo(false);
+          setMensaje(ok ? 'Foto eliminada.' : 'No se pudo quitar la foto. Intenta de nuevo.');
+        },
+      },
+    ]);
+
   return (
     <View style={[styles.contenedor, { paddingTop: insets.top + Spacing.xl, paddingBottom: insets.bottom + Spacing.lg }]}>
       <AppText variant="headline" accessibilityRole="header">
@@ -50,13 +65,14 @@ export default function FotoPerfil() {
       </AppText>
       <Avatar tamano={160} />
       {mensaje ? (
-        <AppText variant="bodySm" color={mensaje === 'Foto guardada.' ? 'onSecondaryFixedVariant' : 'error'} accessibilityLiveRegion="polite">
+        <AppText variant="bodySm" color={mensaje === 'Foto guardada.' || mensaje === 'Foto eliminada.' ? 'onSecondaryFixedVariant' : 'error'} accessibilityLiveRegion="polite">
           {mensaje}
         </AppText>
       ) : null}
       <View style={styles.botones}>
         <Button label="Tomar foto" loading={subiendo} onPress={() => elegir('camara')} />
         <Button label="Elegir de la galería" variant="outline" disabled={subiendo} onPress={() => elegir('galeria')} />
+        {usuario?.avatarPath ? <Button label="Quitar foto" variant="ghost" disabled={subiendo} onPress={quitar} /> : null}
         <Button label={pendienteFoto ? 'Omitir por ahora' : 'Listo'} variant="ghost" disabled={subiendo} onPress={salir} />
       </View>
     </View>
