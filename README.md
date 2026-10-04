@@ -27,6 +27,16 @@ La app usa Supabase Auth, lee el catálogo y los pedidos con RLS, y todas las es
 
 Verificación: `npx expo-doctor`, `npx tsc --noEmit` y `npx expo lint`.
 
+## Build de demostración (APK con EAS)
+
+La app instalable apunta al proyecto Supabase en la nube; sus variables `EXPO_PUBLIC_SUPABASE_URL` y `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` viven en el entorno `preview` de EAS, no en `.env`.
+
+```bash
+npx eas-cli@latest build --platform android --profile preview
+```
+
+Al terminar, EAS da un enlace y un QR para descargar el APK en el teléfono (Android pide permitir la instalación desde el navegador). Antes de una build, aplica las migraciones pendientes a la nube desde `../backend` con `npx supabase db push --linked`. En la nube, «¿Olvidaste tu contraseña?» no envía el código de 6 dígitos: el plan gratuito no permite editar la plantilla del correo sin un SMTP propio.
+
 ## Cuentas de demostración (ficticias)
 
 Vienen del seed del backend (`npm run db:reset` las restablece). Contraseña de todas: `demo1234`.
