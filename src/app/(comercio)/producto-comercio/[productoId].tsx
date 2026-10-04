@@ -24,6 +24,8 @@ import {
 } from '@/data/catalogo-comercio';
 import { formatFechaHora } from '@/lib/format';
 import { useAuth } from '@/state/auth';
+import { useOrders } from '@/state/orders';
+import { ESTADOS_EN_CURSO } from '@/data';
 
 // COM-08 · Detalle de producto: imagen, precio, stock, descripción, promociones y acciones.
 // «Eliminar» sólo funciona sin pedidos (DEC-F14-07); con pedidos se ofrece desactivar.
@@ -31,6 +33,13 @@ export default function ProductoComercioDetalle() {
   const { productoId } = useLocalSearchParams<{ productoId: string }>();
   const { usuario } = useAuth();
   const { recargar } = useCatalogo();
+  const { pedidos } = useOrders();
+  // §11: el stock mostrado es el disponible; lo apartado en pedidos en curso se informa aparte.
+  const reservadas = pedidos
+    .filter((x) => ESTADOS_EN_CURSO.includes(x.estado))
+    .flatMap((x) => x.lineas)
+    .filter((l) => l.productoId === productoId)
+    .reduce((s, l) => s + l.cantidad, 0);
   const [producto, setProducto] = useState<ProductoComercio | null | undefined>(undefined);
   const [promos, setPromos] = useState<PromocionComercio[]>([]);
   const [mensaje, setMensaje] = useState<string | null>(null);
@@ -110,8 +119,13 @@ export default function ProductoComercioDetalle() {
       </View>
       <PriceText amount={p.precio} previous={p.precioAnterior} variant="title" />
       <AppText variant="label" color={p.stock === 0 ? 'error' : 'onSurfaceVariant'}>
-        {p.stock === 0 ? 'Sin stock' : `${p.stock} en stock`}
+        {p.stock === 0 ? 'Sin stock disponible' : `${p.stock} disponibles`}
       </AppText>
+      {reservadas > 0 ? (
+        <AppText variant="bodySm" color="onTertiaryFixedVariant">
+          {reservadas} {reservadas === 1 ? 'unidad reservada' : 'unidades reservadas'} en pedidos en curso
+        </AppText>
+      ) : null}
       {p.descripcion ? <AppText variant="body">{p.descripcion}</AppText> : null}
 
       <Button label="Editar producto" onPress={() => router.push({ pathname: '/editar-producto/[productoId]', params: { productoId: p.id } })} />

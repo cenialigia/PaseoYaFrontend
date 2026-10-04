@@ -10,6 +10,7 @@ import { Screen, Section } from '@/components/ui/screen';
 import { ErrorState } from '@/components/ui/state-views';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { ESTADOS_EN_CURSO, estadoPedidoUI, etiquetaPago, getComercio, getProducto } from '@/data';
+import { useEventosPedido } from '@/data/eventos';
 import { formatFechaHora, formatPrice } from '@/lib/format';
 import { useOrders } from '@/state/orders';
 
@@ -18,6 +19,7 @@ export default function PedidoScreen() {
   const { pedidoId } = useLocalSearchParams<{ pedidoId: string }>();
   const { pedidos, cancelar } = useOrders();
   const pedido = pedidos.find((p) => p.id === pedidoId);
+  const eventos = useEventosPedido(pedidoId, `${pedido?.estado}-${pedido?.pago.estado}`);
   const comercio = pedido && getComercio(pedido.comercioId);
 
   if (!pedido || !comercio) return <ErrorState title="Pedido no encontrado" actionLabel="Ir a mis pedidos" onAction={() => router.navigate('/pedidos')} />;
@@ -69,7 +71,7 @@ export default function PedidoScreen() {
         </AppText>
       </Section>
 
-      <LineaEstado estado={pedido.estado} />
+      <LineaEstado estado={pedido.estado} eventos={eventos} />
 
       <View style={styles.pago}>
         <AppText variant="overline" color="onPrimaryFixedVariant">
@@ -77,6 +79,7 @@ export default function PedidoScreen() {
         </AppText>
         <AppText variant="label" color="onPrimaryFixedVariant">
           {etiquetaPago(pedido)}
+          {pedido.motivoCancelacion ? `\nLa tienda rechazó el pedido: ${pedido.motivoCancelacion}` : ''}
         </AppText>
         <AppText variant="bodySm" color="onPrimaryFixedVariant">
           {reserva ? `Pagas ${formatPrice(pedido.total)} en efectivo en la tienda al recoger.` : 'Pago simulado con QR: no se realiza ningún cobro real.'}

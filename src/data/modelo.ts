@@ -54,6 +54,8 @@ export type Pedido = {
   total: number;
   confirmadoEn: number;
   venceEn: number;
+  // DEC-F11-01: motivo cuando la tienda rechazó el pedido.
+  motivoCancelacion?: string;
   // PIN de retiro (DEC-16): RLS sólo lo entrega al cliente dueño en READY_FOR_PICKUP.
   pin?: string;
 };

@@ -40,6 +40,7 @@ type OrdersContextValue = {
   simularPago: (pedidoId: string) => Promise<boolean>;
   cancelar: (pedidoId: string) => Promise<boolean>;
   avanzar: (pedidoId: string) => Promise<boolean>;
+  rechazar: (pedidoId: string, motivo: string) => Promise<boolean>;
   confirmarEfectivo: (pedidoId: string) => Promise<boolean>;
   verificarRetiro: (codigo: string, pedidoId?: string) => Promise<Verificacion>;
   confirmarEntrega: (pedidoId: string, codigo: string) => Promise<ResultadoRetiro>;
@@ -56,6 +57,7 @@ type FilaPedido = {
   estado: EstadoPedido;
   metodo_pago: MetodoPago;
   estado_pago: EstadoPago;
+  motivo_cancelacion: string | null;
   total: number | string;
   confirmado_en: string;
   vence_en: string;
@@ -76,6 +78,7 @@ function aPedido(f: FilaPedido, pines: Map<string, string>): Pedido {
     total: Number(f.total),
     confirmadoEn: Date.parse(f.confirmado_en),
     venceEn: Date.parse(f.vence_en),
+    motivoCancelacion: f.motivo_cancelacion ?? undefined,
     lineas: f.pedido_lineas.map((l) => ({
       productoId: l.producto_id,
       cantidad: l.cantidad,
@@ -86,7 +89,7 @@ function aPedido(f: FilaPedido, pines: Map<string, string>): Pedido {
   };
 }
 
-const SELECT_PEDIDO = 'id, codigo, cliente_id, perfiles(nombre), comercio_id, estado, metodo_pago, estado_pago, total, confirmado_en, vence_en, pedido_lineas(producto_id, cantidad, precio_unitario, productos(nombre))';
+const SELECT_PEDIDO = 'id, codigo, cliente_id, perfiles(nombre), comercio_id, estado, metodo_pago, estado_pago, total, confirmado_en, vence_en, motivo_cancelacion, pedido_lineas(producto_id, cantidad, precio_unitario, productos(nombre))';
 
 type DatosPedidos = { pedidos: Pedido[]; reportes: Reporte[] };
 
@@ -188,6 +191,13 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
 
   const avanzar = async (pedidoId: string) => !(await rpc('avanzar_pedido', { p_pedido: pedidoId })).error;
 
+  // DEC-F11-01: el comercio rechaza antes de que esté listo; el servidor devuelve stock y reembolsa el QR simulado.
+  const rechazar = async (pedidoId: string, motivo: string) => {
+    const ok = !(await rpc('rechazar_pedido', { p_pedido: pedidoId, p_motivo: motivo.trim() })).error;
+    if (ok) await recargarCatalogo();
+    return ok;
+  };
+
   const confirmarEfectivo = async (pedidoId: string) => !(await rpc('confirmar_efectivo', { p_pedido: pedidoId })).error;
 
   // El servidor valida el QR («paseoya:retiro:<pedido>:<pin>») o el PIN; nunca se confía en el texto escaneado.
@@ -211,7 +221,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
 
   return (
     <OrdersContext.Provider
-      value={{ pedidos, reportes, cargando, recargar, crearPedido, simularPago, cancelar, avanzar, confirmarEfectivo, verificarRetiro, confirmarEntrega, reportar }}>
+      value={{ pedidos, reportes, cargando, recargar, crearPedido, simularPago, cancelar, avanzar, rechazar, confirmarEfectivo, verificarRetiro, confirmarEntrega, reportar }}>
       {children}
     </OrdersContext.Provider>
   );

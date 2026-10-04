@@ -2,7 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
 import { nombreLinea } from '@/components/pedido-comercio-card';
-import { LineaEstado } from '@/components/linea-estado';
+import { HistorialPedido, LineaEstado } from '@/components/linea-estado';
 import { AppText } from '@/components/ui/app-text';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -11,6 +11,7 @@ import { Screen, Section } from '@/components/ui/screen';
 import { ErrorState } from '@/components/ui/state-views';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { ESTADOS_EN_CURSO, estadoPedidoUI, etiquetaPago, useCatalogo } from '@/data';
+import { useEventosPedido } from '@/data/eventos';
 import { formatFechaHora, formatPrice } from '@/lib/format';
 import { useOrders } from '@/state/orders';
 
@@ -20,6 +21,7 @@ export default function PedidoAdmin() {
   const { pedidos, reportes } = useOrders();
   const { comercios } = useCatalogo();
   const pedido = pedidos.find((p) => p.id === pedidoId);
+  const eventos = useEventosPedido(pedidoId, `${pedido?.estado}-${pedido?.pago.estado}`);
   if (!pedido) return <ErrorState title="Pedido no encontrado" actionLabel="Volver" onAction={() => router.back()} />;
   const comercio = comercios.find((c) => c.id === pedido.comercioId);
   const estado = estadoPedidoUI[pedido.estado];
@@ -66,7 +68,8 @@ export default function PedidoAdmin() {
           </AppText>
         </View>
       </Section>
-      <LineaEstado estado={pedido.estado} />
+      <LineaEstado estado={pedido.estado} eventos={eventos} />
+      <HistorialPedido eventos={eventos} />
 
       <View style={styles.pago}>
         <AppText variant="label">Pago</AppText>

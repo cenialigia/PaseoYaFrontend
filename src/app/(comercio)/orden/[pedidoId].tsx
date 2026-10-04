@@ -7,16 +7,20 @@ import { LineaEstado } from '@/components/linea-estado';
 import { AppText } from '@/components/ui/app-text';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { StatusChip } from '@/components/ui/chip';
+import { FilterChip, StatusChip } from '@/components/ui/chip';
 import { Screen, Section } from '@/components/ui/screen';
 import { ErrorState } from '@/components/ui/state-views';
+import { TextField } from '@/components/ui/text-field';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { ESTADOS_EN_CURSO, estadoPedidoUI, etiquetaPago } from '@/data';
+import { useEventosPedido } from '@/data/eventos';
 import { formatFechaHora, formatPrice } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
 import { useOrders } from '@/state/orders';
 
 type Contacto = { nombre: string; telefono: string | null };
+
+const MOTIVOS = ['Sin stock', 'Tienda cerrada', 'No podemos prepararlo a tiempo'];
 
 const siguiente = {
   CONFIRMED: { boton: 'Empezar preparación', titulo: '¿Empezar a preparar el pedido?', texto: 'El cliente verá que su pedido está en preparación y ya no podrá cancelarlo.' },
@@ -26,11 +30,14 @@ const siguiente = {
 // COM-03/04 · Detalle del pedido: productos, pago separado del retiro y transiciones confirmadas (DEC-16, DEC-F14-14).
 export default function OrdenComercio() {
   const { pedidoId } = useLocalSearchParams<{ pedidoId: string }>();
-  const { pedidos, avanzar } = useOrders();
+  const { pedidos, avanzar, rechazar } = useOrders();
   const pedido = pedidos.find((p) => p.id === pedidoId);
+  const eventos = useEventosPedido(pedidoId, `${pedido?.estado}-${pedido?.pago.estado}`);
   const [contacto, setContacto] = useState<Contacto | null>(null);
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState(false);
+  const [rechazando, setRechazando] = useState(false);
+  const [motivo, setMotivo] = useState('');
   const enCurso = !!pedido && ESTADOS_EN_CURSO.includes(pedido.estado);
 
   // DEC-F14-08: nombre y teléfono del cliente sólo mientras el pedido está activo.
@@ -108,7 +115,7 @@ export default function OrdenComercio() {
         </View>
       </Section>
 
-      <LineaEstado estado={pedido.estado} />
+      <LineaEstado estado={pedido.estado} eventos={eventos} />
 
       <View style={styles.pago} accessible>
         <AppText variant="label">Pago</AppText>
@@ -123,6 +130,44 @@ export default function OrdenComercio() {
       </View>
 
       {paso ? <Button label={paso.boton} loading={ocupado} onPress={confirmarPaso} /> : null}
+      {paso && !rechazando ? <Button label="Rechazar pedido" variant="ghost" disabled={ocupado} onPress={() => setRechazando(true)} /> : null}
+      {paso && rechazando ? (
+        <Card>
+          <AppText variant="label">¿Por qué rechazas el pedido?</AppText>
+          <View style={styles.motivos}>
+            {MOTIVOS.map((m) => (
+              <FilterChip key={m} label={m} selected={motivo === m} onPress={() => setMotivo(m)} />
+            ))}
+          </View>
+          <TextField label="Motivo" value={motivo} onChangeText={setMotivo} maxLength={200} ayuda="El cliente lo verá en su aviso." />
+          <Button
+            label="Rechazar y avisar al cliente"
+            variant="destructive"
+            disabled={motivo.trim().length < 3}
+            loading={ocupado}
+            onPress={() =>
+              Alert.alert('¿Rechazar el pedido?', 'Se cancelará, el stock volverá a tu catálogo y, si pagó con QR, se reembolsará.', [
+                { text: 'Volver', style: 'cancel' },
+                {
+                  text: 'Rechazar',
+                  style: 'destructive',
+                  onPress: async () => {
+                    setOcupado(true);
+                    const ok = await rechazar(pedido.id, motivo);
+                    setOcupado(false);
+                    setError(!ok);
+                    if (ok) setRechazando(false);
+                  },
+                },
+              ])
+            }
+          />
+          <Button label="Volver" variant="ghost" disabled={ocupado} onPress={() => setRechazando(false)} />
+        </Card>
+      ) : null}
+      {pedido.motivoCancelacion ? (
+        <AppText variant="bodySm" color="error">Rechazado: {pedido.motivoCancelacion}</AppText>
+      ) : null}
       {pedido.estado === 'READY_FOR_PICKUP' ? (
         <>
           {efectivoPendiente ? (
@@ -147,5 +192,6 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   linea: { flexDirection: 'row', gap: Spacing.sm, alignItems: 'baseline' },
   total: { borderTopWidth: 1, borderTopColor: Colors.outlineVariant, paddingTop: Spacing.sm },
+  motivos: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
   pago: { backgroundColor: Colors.surfaceContainerLow, borderRadius: Radius.control, padding: Spacing.md, gap: 2 },
 });
