@@ -2,12 +2,14 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
+import { GraficoBarras, ventasPorDia } from '@/components/grafico-barras';
 import { AppText } from '@/components/ui/app-text';
 import { FilterChip } from '@/components/ui/chip';
 import { Screen, Section } from '@/components/ui/screen';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { esVenta, estadoPedidoUI, useCatalogo, type EstadoPedido } from '@/data';
 import { listarUsuarios, type UsuarioAdmin } from '@/data/admin';
+import { useNow } from '@/hooks/use-now';
 import { formatPrice } from '@/lib/format';
 import { useOrders } from '@/state/orders';
 
@@ -24,6 +26,7 @@ export default function Analitica() {
   const [periodo, setPeriodo] = useState<Periodo>('30');
   const [pestana, setPestana] = useState<Pestana>('resumen');
   const [usuarios, setUsuarios] = useState<UsuarioAdmin[]>([]);
+  const ahora = useNow();
 
   useFocusEffect(
     useCallback(() => {
@@ -86,6 +89,7 @@ export default function Analitica() {
             <Bloque titulo="Pedidos con venta" valor={String(ventas.length)} />
             <Bloque titulo="Ticket promedio" valor={formatPrice(ventas.length ? total / ventas.length : 0)} />
           </View>
+          <GraficoBarras titulo={periodo === '7' ? 'Ventas por día' : 'Ventas por día (últimos 30)'} barras={ventasPorDia(pedidos, periodo === '7' ? 7 : 30, ahora)} />
           <Section title="Por categoría">
             <Barras filas={porCategoria} formato={formatPrice} />
           </Section>

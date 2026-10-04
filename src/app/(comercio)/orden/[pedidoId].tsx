@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
 
 import { nombreLinea } from '@/components/pedido-comercio-card';
+import { LineaEstado } from '@/components/linea-estado';
 import { AppText } from '@/components/ui/app-text';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -106,6 +107,8 @@ export default function OrdenComercio() {
           </AppText>
         </View>
       </Section>
+
+      <LineaEstado estado={pedido.estado} />
 
       <View style={styles.pago} accessible>
         <AppText variant="label">Pago</AppText>

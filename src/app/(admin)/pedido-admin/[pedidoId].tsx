@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
 import { nombreLinea } from '@/components/pedido-comercio-card';
+import { LineaEstado } from '@/components/linea-estado';
 import { AppText } from '@/components/ui/app-text';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -65,6 +66,8 @@ export default function PedidoAdmin() {
           </AppText>
         </View>
       </Section>
+      <LineaEstado estado={pedido.estado} />
+
       <View style={styles.pago}>
         <AppText variant="label">Pago</AppText>
         <AppText variant="bodySm" color="onSurfaceVariant">

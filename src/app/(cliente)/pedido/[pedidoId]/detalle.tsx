@@ -1,6 +1,7 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Alert, StyleSheet, View } from 'react-native';
 
+import { LineaEstado } from '@/components/linea-estado';
 import { AppText } from '@/components/ui/app-text';
 import { Button } from '@/components/ui/button';
 import { StatusChip } from '@/components/ui/chip';
@@ -67,6 +68,8 @@ export default function PedidoScreen() {
           {ESTADOS_EN_CURSO.includes(pedido.estado) ? ` · Recoger antes del ${formatFechaHora(pedido.venceEn)}` : ''}
         </AppText>
       </Section>
+
+      <LineaEstado estado={pedido.estado} />
 
       <View style={styles.pago}>
         <AppText variant="overline" color="onPrimaryFixedVariant">

@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AdminHeader } from '@/components/admin-header';
+import { GraficoBarras, ventasPorDia } from '@/components/grafico-barras';
 import { PedidoComercioCard } from '@/components/pedido-comercio-card';
 import { AppText } from '@/components/ui/app-text';
 import { StatusChip } from '@/components/ui/chip';
@@ -12,6 +13,7 @@ import { EmptyState } from '@/components/ui/state-views';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { esVenta, estadoPedidoUI, useCatalogo, type EstadoPedido } from '@/data';
 import { listarPromocionesAdmin, listarUsuarios } from '@/data/admin';
+import { useNow } from '@/hooks/use-now';
 import { formatPrice } from '@/lib/format';
 import { useOrders } from '@/state/orders';
 
@@ -29,6 +31,7 @@ export default function AdminInicio() {
   const { comercios } = useCatalogo();
   const [usuarios, setUsuarios] = useState<number | null>(null);
   const [porRevisar, setPorRevisar] = useState(0);
+  const ahora = useNow();
 
   useFocusEffect(
     useCallback(() => {
@@ -73,6 +76,8 @@ export default function AdminInicio() {
           {hoy.length} {hoy.length === 1 ? 'pedido hoy' : 'pedidos hoy'} · sólo cuenta lo pagado
         </AppText>
       </View>
+
+      <GraficoBarras titulo="Ventas de la semana" barras={ventasPorDia(pedidos, 7, ahora)} />
 
       {porRevisar > 0 ? (
         <Pressable accessibilityRole="button" onPress={() => router.push('/promociones-admin')} style={styles.alerta}>

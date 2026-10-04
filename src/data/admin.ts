@@ -16,6 +16,7 @@ export type UsuarioAdmin = {
   telefono?: string;
   creadoEn: number;
   ultimoAcceso?: number;
+  eliminado: boolean;
 };
 
 type FilaUsuario = {
@@ -29,6 +30,7 @@ type FilaUsuario = {
   telefono: string | null;
   creado_en: string;
   ultimo_acceso: string | null;
+  eliminado: boolean;
 };
 
 export async function listarUsuarios(): Promise<UsuarioAdmin[] | null> {
@@ -45,12 +47,22 @@ export async function listarUsuarios(): Promise<UsuarioAdmin[] | null> {
     telefono: u.telefono ?? undefined,
     creadoEn: Date.parse(u.creado_en),
     ultimoAcceso: u.ultimo_acceso ? Date.parse(u.ultimo_acceso) : undefined,
+    eliminado: u.eliminado,
   }));
 }
 
 export async function cambiarEstadoUsuario(id: string, activo: boolean): Promise<boolean> {
   const { error } = await supabase.rpc('cambiar_estado_usuario', { p_usuario: id, p_activo: activo });
   return !error;
+}
+
+// DEC-24: el admin elimina (anonimiza) una cuenta de cliente. La foto se borra antes con la API de Storage.
+export async function eliminarCuentaCliente(id: string): Promise<'ok' | 'pedidos-activos' | 'red'> {
+  const { data } = await supabase.from('perfiles').select('avatar_path').eq('id', id).maybeSingle();
+  if (data?.avatar_path) await supabase.storage.from('avatares').remove([data.avatar_path]);
+  const { error } = await supabase.rpc('eliminar_cuenta', { p_usuario: id });
+  if (error) return error.code === 'P0003' ? 'pedidos-activos' : 'red';
+  return 'ok';
 }
 
 export const etiquetaRol: Record<Rol, string> = { CLIENTE: 'Cliente', COMERCIO: 'Comercio', ADMIN: 'Administración' };

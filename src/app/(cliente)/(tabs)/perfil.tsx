@@ -56,6 +56,12 @@ export default function Perfil() {
           Cerrar sesión
         </AppText>
       </Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel="Eliminar mi cuenta" onPress={() => router.push('/eliminar-cuenta')} style={styles.opcion}>
+        <MaterialIcons name="delete-outline" size={24} color={Colors.onSurfaceVariant} />
+        <AppText variant="bodySm" color="onSurfaceVariant">
+          Eliminar mi cuenta
+        </AppText>
+      </Pressable>
     </Screen>
   );
 }

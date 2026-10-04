@@ -219,5 +219,5 @@ const styles = StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
   dato: { gap: 2, paddingVertical: Spacing.xs },
   datos: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
-  bloque: { flexGrow: 1, flexBasis: '30%', padding: Spacing.md, borderRadius: Radius.control, backgroundColor: Colors.surfaceContainerLowest, gap: 2 },
+  bloque: { flexGrow: 1, flexBasis: '45%', padding: Spacing.md, borderRadius: Radius.control, backgroundColor: Colors.surfaceContainerLowest, gap: 2 },
 });

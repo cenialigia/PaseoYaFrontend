@@ -28,7 +28,7 @@ export default function Ayuda() {
       </Section>
       <Section title="Legal">
         <AppText variant="bodySm" color="onSurfaceVariant">
-          PaseoYa es una versión de demostración con datos ficticios. Tus datos personales se usan para gestionar tus pedidos y, de forma agregada, para estadísticas de la plaza. La política completa de privacidad y retención está pendiente de aprobación.
+          PaseoYa es una versión de demostración con datos ficticios. Tus datos personales se usan para gestionar tus pedidos (la tienda ve tu nombre y teléfono sólo mientras tu pedido está activo) y, de forma agregada, para estadísticas de la plaza. Puedes eliminar tu cuenta desde Perfil: se borran tus datos y tu foto, y tus pedidos quedan anónimos. Los avisos se borran a los 90 días y los reportes a los 12 meses.
         </AppText>
       </Section>
       <Button label="Reportar un problema" variant="outline" onPress={() => router.push('/reportar')} />

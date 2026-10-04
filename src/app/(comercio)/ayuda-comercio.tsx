@@ -27,7 +27,7 @@ export default function AyudaComercio() {
       <Section title="Legal">
         <AppText variant="bodySm" color="onSurfaceVariant">
           PaseoYa es una versión de demostración con datos ficticios. El nombre y el teléfono del cliente sólo se muestran mientras su pedido está activo y deben usarse
-          únicamente para gestionar ese pedido. La política de retención de datos está pendiente de aprobación.
+          únicamente para gestionar ese pedido. Los avisos se borran a los 90 días; si un cliente elimina su cuenta, sus pedidos se conservan como «Cliente eliminado».
         </AppText>
       </Section>
     </Screen>

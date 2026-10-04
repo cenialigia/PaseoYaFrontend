@@ -26,8 +26,8 @@ export default function ClienteLayout() {
         <Stack.Screen name="producto/[productoId]" options={{ title: 'Producto' }} />
         <Stack.Screen name="checkout/[carritoId]" options={{ title: 'Método de pago' }} />
         <Stack.Screen name="pago-qr/[pedidoId]" options={{ title: 'Pagar con QR' }} />
-        <Stack.Screen name="pago-confirmado/[pedidoId]" options={{ title: '', headerBackVisible: false }} />
-        <Stack.Screen name="reserva-confirmada/[pedidoId]" options={{ title: '', headerBackVisible: false }} />
+        <Stack.Screen name="pago-confirmado/[pedidoId]" options={{ headerShown: false }} />
+        <Stack.Screen name="reserva-confirmada/[pedidoId]" options={{ headerShown: false }} />
         <Stack.Screen name="pedido/[pedidoId]/detalle" options={{ title: 'Pedido' }} />
         <Stack.Screen name="pedido/[pedidoId]/ticket" options={{ title: 'Ticket de recojo' }} />
         <Stack.Screen name="favoritos" options={{ title: 'Mis favoritos' }} />
@@ -36,6 +36,7 @@ export default function ClienteLayout() {
         <Stack.Screen name="datos-personales" options={{ title: 'Información personal' }} />
         <Stack.Screen name="reportar" options={{ title: 'Reportar un problema' }} />
         <Stack.Screen name="ayuda" options={{ title: 'Ayuda' }} />
+        <Stack.Screen name="eliminar-cuenta" options={{ title: 'Eliminar mi cuenta' }} />
       </Stack>
     </CatalogoGate>
   );

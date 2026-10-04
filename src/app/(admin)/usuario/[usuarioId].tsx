@@ -9,7 +9,7 @@ import { StatusChip } from '@/components/ui/chip';
 import { Screen } from '@/components/ui/screen';
 import { ErrorState, LoadingState } from '@/components/ui/state-views';
 import { Spacing } from '@/constants/theme';
-import { cambiarEstadoUsuario, etiquetaRol, listarUsuarios, type UsuarioAdmin } from '@/data/admin';
+import { cambiarEstadoUsuario, eliminarCuentaCliente, etiquetaRol, listarUsuarios, type UsuarioAdmin } from '@/data/admin';
 import { esVenta } from '@/data';
 import { formatFechaHora, formatPrice } from '@/lib/format';
 import { useAuth } from '@/state/auth';
@@ -22,7 +22,7 @@ export default function UsuarioAdminDetalle() {
   const { pedidos } = useOrders();
   const [u, setU] = useState<UsuarioAdmin | null | undefined>(undefined);
   const [ocupado, setOcupado] = useState(false);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let activo = true;
@@ -53,12 +53,28 @@ export default function UsuarioAdminDetalle() {
             setOcupado(true);
             const ok = await cambiarEstadoUsuario(usuario.id, !usuario.activo);
             setOcupado(false);
-            setError(!ok);
+            setError(ok ? null : 'No se pudo cambiar el estado. Intenta de nuevo.');
             if (ok) setU({ ...usuario, activo: !usuario.activo });
           },
         },
       ],
     );
+
+  const eliminar = () =>
+    Alert.alert(`¿Eliminar los datos de ${usuario.nombre}?`, 'Se borran sus datos personales y su foto; sus pedidos quedan anónimos. No se puede deshacer.', [
+      { text: 'Volver', style: 'cancel' },
+      {
+        text: 'Eliminar',
+        style: 'destructive',
+        onPress: async () => {
+          setOcupado(true);
+          const r = await eliminarCuentaCliente(usuario.id);
+          setOcupado(false);
+          if (r === 'ok') return setU({ ...usuario, nombre: 'Cliente eliminado', telefono: undefined, activo: false, eliminado: true });
+          setError(r === 'pedidos-activos' ? 'Tiene pedidos en curso: deben retirarse o cancelarse antes.' : 'No se pudo eliminar. Intenta de nuevo.');
+        },
+      },
+    ]);
 
   return (
     <Screen>
@@ -66,7 +82,7 @@ export default function UsuarioAdminDetalle() {
         <AppText variant="headline" style={styles.flex}>
           {usuario.nombre}
         </AppText>
-        <StatusChip label={usuario.activo ? 'Activo' : 'Inactivo'} tone={usuario.activo ? 'listo' : 'cerrado'} />
+        <StatusChip label={usuario.eliminado ? 'Eliminado' : usuario.activo ? 'Activo' : 'Inactivo'} tone={usuario.activo ? 'listo' : 'cerrado'} />
       </View>
       <Card>
         <Dato etiqueta="Correo" valor={usuario.email} />
@@ -84,16 +100,21 @@ export default function UsuarioAdminDetalle() {
       {usuario.comercioId ? (
         <Button label="Ver comercio" variant="outline" onPress={() => router.push({ pathname: '/comercio-admin/[comercioId]', params: { comercioId: usuario.comercioId ?? '' } })} />
       ) : null}
-      {esYo ? (
+      {usuario.eliminado ? (
+        <AppText variant="caption" color="onSurfaceVariant">
+          Cuenta eliminada a pedido (DEC-24): sus datos personales ya no existen.
+        </AppText>
+      ) : esYo ? (
         <AppText variant="caption" color="onSurfaceVariant">
           Es tu cuenta: no puedes desactivarla.
         </AppText>
       ) : (
         <Button label={usuario.activo ? 'Desactivar usuario' : 'Activar usuario'} variant={usuario.activo ? 'outline' : 'secondary'} loading={ocupado} onPress={alternar} />
       )}
+      {usuario.rol === 'CLIENTE' && !usuario.eliminado ? <Button label="Eliminar datos del cliente" variant="ghost" disabled={ocupado} onPress={eliminar} /> : null}
       {error ? (
         <AppText variant="bodySm" color="error" accessibilityRole="alert">
-          No se pudo cambiar el estado. Intenta de nuevo.
+          {error}
         </AppText>
       ) : null}
     </Screen>

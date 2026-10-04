@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Switch, View } from 'react-native';
 
+import { GraficoBarras, ventasPorHora } from '@/components/grafico-barras';
 import { ComercioHeader } from '@/components/comercio-header';
 import { PedidoComercioCard } from '@/components/pedido-comercio-card';
 import { AppText } from '@/components/ui/app-text';
@@ -12,6 +13,7 @@ import { EmptyState } from '@/components/ui/state-views';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { esVenta, useCatalogo } from '@/data';
 import { cambiarAbierto } from '@/data/catalogo-comercio';
+import { useNow } from '@/hooks/use-now';
 import { formatPrice } from '@/lib/format';
 import { useAuth } from '@/state/auth';
 import { useOrders } from '@/state/orders';
@@ -32,6 +34,7 @@ export default function PanelComercio() {
   const comercio = comercios.find((c) => c.id === comercioId);
   const [cambiando, setCambiando] = useState(false);
   const [error, setError] = useState(false);
+  const ahora = useNow();
 
   const propios = pedidos.filter((p) => p.comercioId === comercioId);
   const nuevos = propios.filter((p) => p.estado === 'CONFIRMED');
@@ -102,6 +105,8 @@ export default function PanelComercio() {
           {hoy.length} {hoy.length === 1 ? 'pedido pagado' : 'pedidos pagados'}
         </AppText>
       </View>
+
+      <GraficoBarras titulo="Ventas de hoy por hora" barras={ventasPorHora(propios, ahora)} />
 
       <View style={styles.indicadores}>
         {indicador('Nuevos', nuevos.length, 'fiber-new')}

@@ -30,12 +30,16 @@ type AuthContextValue = {
   cargando: boolean;
   // Tras registrarse se ofrece una vez el paso «Agrega tu foto» (CLI-04).
   pendienteFoto: boolean;
+  // Hay sesión guardada pero no se pudo leer el perfil (servidor caído o sin red).
+  sinConexion: boolean;
+  reintentar: () => Promise<void>;
   terminarFoto: () => void;
   ingresar: (email: string, password: string) => Promise<ErrorAuth | null>;
   registrarCliente: (datos: DatosRegistro) => Promise<ErrorAuth | null>;
   actualizarPerfil: (datos: DatosPerfil) => Promise<boolean>;
   subirAvatar: (base64: string, mime: string) => Promise<boolean>;
   quitarAvatar: () => Promise<boolean>;
+  eliminarCuenta: () => Promise<'ok' | 'pedidos-activos' | 'red'>;
   urlAvatar: () => Promise<string | null>;
   enviarCodigoRecuperacion: (email: string) => Promise<ErrorAuth | null>;
   restablecerContrasena: (email: string, codigo: string, nueva: string) => Promise<ErrorAuth | null>;
@@ -44,14 +48,16 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-async function cargarUsuario(session: Session | null): Promise<Usuario | null> {
+// 'red' = hay sesión pero el servidor no respondió: no se trata como sesión cerrada.
+async function cargarUsuario(session: Session | null): Promise<Usuario | null | 'red'> {
   if (!session) return null;
   const { data, error } = await supabase
     .from('perfiles')
     .select('id, nombre, rol, comercio_id, telefono, genero, fecha_nacimiento, avatar_path')
     .eq('id', session.user.id)
     .single();
-  if (error || !data) return null;
+  if (error) return error.code === 'PGRST116' ? null : 'red';
+  if (!data) return null;
   return {
     id: data.id,
     nombre: data.nombre,
@@ -71,23 +77,30 @@ export const TELEFONO = /^\+?[0-9 ]{7,16}$/;
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [cargando, setCargando] = useState(true);
+  const [sinConexion, setSinConexion] = useState(false);
+
+  const aplicarUsuario = (u: Usuario | null | 'red') => {
+    setSinConexion(u === 'red');
+    // Sin conexión se conserva el usuario que ya estaba cargado.
+    if (u !== 'red') setUsuario(u);
+  };
   const [pendienteFoto, setPendienteFoto] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
-      setUsuario(await cargarUsuario(data.session));
+      aplicarUsuario(await cargarUsuario(data.session));
       setCargando(false);
     });
     const { data } = supabase.auth.onAuthStateChange((_evento, session) => {
       // Sin await dentro del callback: Supabase recomienda diferir llamadas a la API.
-      setTimeout(async () => setUsuario(await cargarUsuario(session)), 0);
+      setTimeout(async () => aplicarUsuario(await cargarUsuario(session)), 0);
     });
     return () => data.subscription.unsubscribe();
   }, []);
 
   const recargarUsuario = async () => {
     const { data } = await supabase.auth.getSession();
-    setUsuario(await cargarUsuario(data.session));
+    aplicarUsuario(await cargarUsuario(data.session));
   };
 
   const ingresar = async (email: string, password: string): Promise<ErrorAuth | null> => {
@@ -151,6 +164,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return true;
   };
 
+  // DEC-24: borra la foto (Storage no admite borrado por SQL), anonimiza la cuenta en el servidor y cierra la sesión.
+  const eliminarCuenta = async (): Promise<'ok' | 'pedidos-activos' | 'red'> => {
+    if (!usuario) return 'red';
+    if (!(await quitarAvatar())) return 'red';
+    const { error } = await supabase.rpc('eliminar_cuenta');
+    if (error) return error.code === 'P0003' ? 'pedidos-activos' : 'red';
+    await supabase.auth.signOut();
+    return 'ok';
+  };
+
   const urlAvatar = async (): Promise<string | null> => {
     if (!usuario?.avatarPath) return null;
     const { data } = await supabase.storage.from('avatares').createSignedUrl(usuario.avatarPath, 3600);
@@ -183,12 +206,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         usuario,
         cargando,
         pendienteFoto,
+        sinConexion,
+        reintentar: recargarUsuario,
         terminarFoto: () => setPendienteFoto(false),
         ingresar,
         registrarCliente,
         actualizarPerfil,
         subirAvatar,
         quitarAvatar,
+        eliminarCuenta,
         urlAvatar,
         enviarCodigoRecuperacion,
         restablecerContrasena,

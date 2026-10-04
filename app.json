@@ -17,7 +17,11 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.paseoya.app",
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
     },
     "web": {
       "output": "static",
@@ -41,11 +45,25 @@
           "cameraPermission": "PaseoYa usa la cámara para leer el código de recojo de tus clientes.",
           "recordAudioAndroid": false
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "PaseoYa usa tus fotos para tu foto de perfil y las imágenes de tu tienda.",
+          "cameraPermission": "PaseoYa usa la cámara para tu foto de perfil, las fotos de productos y leer códigos de recojo."
+        }
       ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "52cc768b-2b14-49a3-9719-578799e477a1"
+      }
+    },
+    "owner": "ferfloo07"
   }
 }

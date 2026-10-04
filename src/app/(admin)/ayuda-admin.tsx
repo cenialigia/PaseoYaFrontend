@@ -26,8 +26,7 @@ export default function AyudaAdmin() {
       </Section>
       <Section title="Legal">
         <AppText variant="bodySm" color="onSurfaceVariant">
-          Tus acciones quedan registradas en la auditoría. Usa los datos personales de clientes y comercios sólo para administrar la plaza. La política de retención de datos
-          está pendiente de aprobación.
+          Tus acciones quedan registradas en la auditoría. Usa los datos personales de clientes y comercios sólo para administrar la plaza. Retención (DEC-24): cuentas de cliente eliminadas a pedido con anonimización, avisos 90 días, reportes 12 meses y respaldo semanal fuera del repositorio.
         </AppText>
       </Section>
     </Screen>

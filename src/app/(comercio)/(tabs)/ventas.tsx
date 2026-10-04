@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
+import { GraficoBarras, ventasPorDia, ventasPorHora } from '@/components/grafico-barras';
 import { ComercioHeader } from '@/components/comercio-header';
 import { PedidoComercioCard } from '@/components/pedido-comercio-card';
 import { AppText } from '@/components/ui/app-text';
@@ -9,6 +10,7 @@ import { Screen, Section } from '@/components/ui/screen';
 import { EmptyState } from '@/components/ui/state-views';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { esVenta } from '@/data';
+import { useNow } from '@/hooks/use-now';
 import { formatPrice } from '@/lib/format';
 import { useAuth } from '@/state/auth';
 import { useOrders } from '@/state/orders';
@@ -27,6 +29,8 @@ export default function VentasComercio() {
   const { usuario } = useAuth();
   const { pedidos } = useOrders();
   const [periodo, setPeriodo] = useState<Periodo>('hoy');
+  const ahora = useNow();
+  const propios = pedidos.filter((p) => p.comercioId === usuario?.comercioId);
   const ventas = pedidos.filter((p) => p.comercioId === usuario?.comercioId && esVenta(p) && p.confirmadoEn >= desde(periodo));
   const total = ventas.reduce((s, p) => s + p.total, 0);
   const qr = ventas.filter((p) => p.pago.metodo === 'QR_SIMULADO').reduce((s, p) => s + p.total, 0);
@@ -62,6 +66,10 @@ export default function VentasComercio() {
           {ventas.length} {ventas.length === 1 ? 'pedido pagado' : 'pedidos pagados'}
         </AppText>
       </View>
+      <GraficoBarras
+        titulo={periodo === 'hoy' ? 'Ventas de hoy por hora' : periodo === '7' ? 'Ventas por día' : 'Ventas por día (últimos 30)'}
+        barras={periodo === 'hoy' ? ventasPorHora(propios, ahora) : ventasPorDia(propios, periodo === '7' ? 7 : 30, ahora)}
+      />
       <View style={styles.datos}>
         {dato('Ticket promedio', formatPrice(promedio))}
         {dato('Con QR (simulado)', formatPrice(qr))}
@@ -85,5 +93,5 @@ const styles = StyleSheet.create({
   chips: { gap: Spacing.sm },
   total: { backgroundColor: Colors.primaryFixed, borderRadius: Radius.control, padding: Spacing.md, gap: Spacing.xs },
   datos: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
-  dato: { flexGrow: 1, flexBasis: '30%', padding: Spacing.md, borderRadius: Radius.control, backgroundColor: Colors.surfaceContainerLowest, gap: 2 },
+  dato: { flexGrow: 1, flexBasis: '45%', padding: Spacing.md, borderRadius: Radius.control, backgroundColor: Colors.surfaceContainerLowest, gap: 2 },
 });
