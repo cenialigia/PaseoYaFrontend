@@ -26,22 +26,22 @@ export default function Carritos() {
   const vencidos = carritos.filter((c) => c.expiraEn <= ahora);
 
   return (
-    <Screen title="Carritos">
+    <Screen>
       <View style={styles.flow}>
         <AppText variant="label" color="onPrimaryFixedVariant">
           Cómo funciona
         </AppText>
         <AppText variant="bodySm" color="onPrimaryFixedVariant">
-          1. Cada comercio tiene su propio carrito y se paga por separado.{'\n'}2. Al confirmar recibe un código de retiro.{'\n'}3. Retira el pedido en persona en el local.
+          1. Cada comercio tiene su propio carrito y se paga por separado.{'\n'}2. Cuando esté listo, recibes tu código de recojo.{'\n'}3. Recoges tu pedido en persona en el local.
         </AppText>
       </View>
 
       {activos.length === 0 ? (
         <EmptyState
-          title="No tiene carritos activos"
-          message="Agregue productos desde Explorar o Buscar."
-          actionLabel="Ir a Explorar"
-          onAction={() => router.navigate('/explorar')}
+          title="Tu carrito está vacío"
+          message="Agrega productos desde Inicio o Buscar."
+          actionLabel="Ir a Inicio"
+          onAction={() => router.navigate('/inicio')}
         />
       ) : (
         activos.map((c) => <CarritoActivo key={c.id} carrito={c} ahora={ahora} />)
@@ -110,8 +110,8 @@ function CarritoActivo({ carrito, ahora }: { carrito: Carrito; ahora: number }) 
               <View style={styles.problema} accessibilityRole="alert">
                 <AppText variant="bodySm" color="onErrorContainer">
                   {problema.tipo === 'agotado'
-                    ? 'Este producto se agotó. Quítelo para continuar.'
-                    : `Ahora sólo quedan ${problema.disponible}. Ajuste la cantidad para continuar.`}
+                    ? 'Este producto se agotó. Quítalo para continuar.'
+                    : `Ahora sólo quedan ${problema.disponible}. Ajusta la cantidad para continuar.`}
                 </AppText>
                 {problema.tipo === 'menos-stock' ? (
                   <Button label={`Dejar ${problema.disponible}`} variant="outline" onPress={() => cambiarCantidad(carrito.id, p.id, problema.disponible)} />
@@ -142,7 +142,8 @@ function CarritoActivo({ carrito, ahora }: { carrito: Carrito; ahora: number }) 
         La disponibilidad se confirma al pagar.
       </AppText>
       <Button
-        label={problemas.length > 0 ? 'Revise los productos marcados' : `Ir a pagar en ${comercio?.nombre}`}
+        label={problemas.length > 0 ? 'Revisa los productos marcados' : 'Continuar'}
+        accessibilityLabel={`Continuar al pago en ${comercio?.nombre}`}
         disabled={problemas.length > 0}
         onPress={() => router.push({ pathname: '/checkout/[carritoId]', params: { carritoId: carrito.id } })}
       />
@@ -172,7 +173,7 @@ function CarritoVencido({ carrito }: { carrito: Carrito }) {
         {carrito.lineas.map((l) => `${l.cantidad} × ${getProducto(l.productoId)?.nombre}`).join(' · ')}
       </AppText>
       <AppText variant="caption" color="onSurfaceVariant">
-        Al volver a agregar se recuperan sólo los productos con stock.
+        Al volver a agregarlo se recuperan sólo los productos con stock.
       </AppText>
       <Button label="Volver a agregar" variant="outline" onPress={onRecuperar} />
       <Button label="Descartar" variant="ghost" onPress={() => eliminarCarrito(carrito.id)} />

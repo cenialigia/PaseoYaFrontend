@@ -14,6 +14,8 @@ import { Colors } from '@/constants/theme';
 import { CatalogoProvider } from '@/data/catalogo';
 import { AuthProvider, useAuth } from '@/state/auth';
 import { CartProvider } from '@/state/cart';
+import { FavoritosProvider } from '@/state/favoritos';
+import { NotificacionesProvider } from '@/state/notificaciones';
 import { OrdersProvider } from '@/state/orders';
 
 SplashScreen.preventAutoHideAsync();
@@ -53,8 +55,12 @@ function DatosDeSesion() {
     <CatalogoProvider key={usuario?.id ?? 'sin-sesion'}>
       <CartProvider>
         <OrdersProvider>
-          <StatusBar style="dark" />
-          <Stack screenOptions={{ headerShown: false }} />
+          <FavoritosProvider>
+            <NotificacionesProvider>
+              <StatusBar style="dark" />
+              <Stack screenOptions={{ headerShown: false }} />
+            </NotificacionesProvider>
+          </FavoritosProvider>
         </OrdersProvider>
       </CartProvider>
     </CatalogoProvider>

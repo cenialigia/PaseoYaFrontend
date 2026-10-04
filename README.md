@@ -33,23 +33,25 @@ Vienen del seed del backend (`npm run db:reset` las restablece). Contraseña de 
 
 | Rol | Correo | Entra en |
 | --- | --- | --- |
-| Cliente | `cliente@paseoya.demo` | Explorar, Buscar, Carritos, Pedidos, Perfil |
-| Comercio (TechZone) | `techzone@paseoya.demo` | Panel de comercio |
-| Comercio (Boutique) | `boutique@paseoya.demo` | Panel de comercio |
+| Cliente (María Fernanda) | `cliente@paseoya.demo` | Inicio, Mis pedidos, Promociones, Perfil |
+| Cliente 2 | `cliente2@paseoya.demo` | Igual que el anterior |
+| Comercio (TechStore) | `techstore@paseoya.demo` | Panel de comercio |
+| Comercio (Fashion Store) | `fashion@paseoya.demo` | Panel de comercio |
+| Comercio (Sabor Criollo) | `saborcriollo@paseoya.demo` | Panel de comercio |
 | Admin Paseo Aranjuez | `admin@paseoya.demo` | Supervisión |
 
-También se puede crear una cuenta de cliente desde «Crear cuenta de cliente».
+También se puede crear una cuenta de cliente desde «Crear cuenta» (con foto de perfil opcional). «¿Olvidaste tu contraseña?» envía un código de 6 dígitos; en local el correo llega a Mailpit (http://127.0.0.1:54324).
 
 ## Guion de la demo (unos 3 minutos, dos dispositivos)
 
 Antes de empezar: `npm run db:reset` en el backend deja el seed limpio. Ideal: un teléfono como **cliente** y un emulador o segundo teléfono como **comercio**; los cambios se ven en tiempo real en ambos.
 
-1. **Cliente:** Buscar «cargador» → «Agregar al carrito de TechZone» → Carritos → «Ir a pagar en TechZone» → «Efectivo al retirar» → «Confirmar pedido».
-2. **Comercio (TechZone):** el pedido aparece solo en «Por atender» → «Iniciar preparación» → «Marcar listo para retiro». En el teléfono del cliente el estado cambia solo.
-3. **Cliente:** «Ver código de retiro» → QR + PIN.
+1. **Cliente:** Inicio → Tecnología → TechStore → «Agregar al carrito» en el cargador → carrito → «Continuar» → «Pagar en efectivo» → «Continuar» (reserva de 72 h).
+2. **Comercio (TechStore):** el pedido aparece solo en «Por atender» → «Iniciar preparación» → «Marcar listo para retiro». En el teléfono del cliente el estado cambia solo.
+3. **Cliente:** Mis pedidos → Reservas → «Ver ticket» → QR + PIN. La campana muestra cada cambio de estado.
 4. **Comercio:** Listos → «Confirmar pago en efectivo» → escribir el PIN → «Validar retiro». Un PIN incorrecto se rechaza. En el teléfono del cliente el ticket pasa a «ya se usó».
 5. **Admin:** ventas, pedidos por estado, comercios y reportes.
-6. Variante QR: elegir «QR de pago (simulado)» y pulsar «Simular pago» en el pedido.
+6. Variante QR: elegir «Pagar con QR (simulado)»; el QR vence en 5 minutos y «Simular pago» lo confirma. Los audífonos tienen 40 % de descuento: el servidor fija Bs 180,00 al confirmar.
 
 En Expo Go, el botón flotante de herramientas (engranaje) puede tapar «Perfil»: arrástrelo a otro borde.
 

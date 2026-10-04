@@ -41,6 +41,8 @@ type FilaPedido = {
   metodo_pago: MetodoPago;
   estado_pago: EstadoPago;
   total: number | string;
+  confirmado_en: string;
+  vence_en: string;
   pedido_lineas: { producto_id: string; cantidad: number; precio_unitario: number | string }[];
 };
 
@@ -52,12 +54,14 @@ function aPedido(f: FilaPedido, pines: Map<string, string>): Pedido {
     estado: f.estado,
     pago: { metodo: f.metodo_pago, estado: f.estado_pago },
     total: Number(f.total),
+    confirmadoEn: Date.parse(f.confirmado_en),
+    venceEn: Date.parse(f.vence_en),
     lineas: f.pedido_lineas.map((l) => ({ productoId: l.producto_id, cantidad: l.cantidad, precioUnitario: Number(l.precio_unitario) })),
     pin: pines.get(f.id),
   };
 }
 
-const SELECT_PEDIDO = 'id, codigo, comercio_id, estado, metodo_pago, estado_pago, total, pedido_lineas(producto_id, cantidad, precio_unitario)';
+const SELECT_PEDIDO = 'id, codigo, comercio_id, estado, metodo_pago, estado_pago, total, confirmado_en, vence_en, pedido_lineas(producto_id, cantidad, precio_unitario)';
 
 type DatosPedidos = { pedidos: Pedido[]; reportes: Reporte[] };
 
@@ -188,10 +192,10 @@ export function useOrders(): OrdersContextValue {
 }
 
 export const mensajeCheckoutError: Record<CheckoutError['motivo'], string> = {
-  red: 'No se pudo confirmar por un problema de conexión. Puede reintentar: no se creará un pedido duplicado.',
-  stock: 'La disponibilidad cambió. Revise su carrito antes de continuar.',
-  cerrado: 'El comercio está cerrado en este momento.',
-  vencido: 'Su carrito venció. Vuelva a agregar los productos.',
+  red: 'No se pudo confirmar por un problema de conexión. Puedes reintentar: no se creará un pedido duplicado.',
+  stock: 'La disponibilidad cambió. Revisa tu carrito antes de continuar.',
+  cerrado: 'La tienda está cerrada en este momento.',
+  vencido: 'Tu carrito venció. Vuelve a agregar los productos.',
 };
 
 export const mensajeValidacion: Record<ResultadoValidacion, string> = {
@@ -200,5 +204,5 @@ export const mensajeValidacion: Record<ResultadoValidacion, string> = {
   'no-listo': 'El pedido no está listo para retiro o ya fue entregado.',
   ajeno: 'Este pedido no pertenece a su comercio.',
   'pago-pendiente': 'El pago está pendiente. Confirme el efectivo o espere el pago simulado antes de entregar.',
-  red: 'No se pudo conectar con el servidor. Intente de nuevo.',
+  red: 'No se pudo conectar con el servidor. Intenta de nuevo.',
 };

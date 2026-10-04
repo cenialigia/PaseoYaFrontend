@@ -16,13 +16,13 @@ import { CheckoutError, mensajeCheckoutError, useOrders } from '@/state/orders';
 const METODOS: { id: MetodoPago; titulo: string; detalle: string }[] = [
   {
     id: 'QR_SIMULADO',
-    titulo: 'QR de pago (simulado)',
-    detalle: 'Demostración sin cobro real. Después de confirmar verá un QR simulado y podrá pulsar «Simular pago». Plazo para retirar: 14 días.',
+    titulo: 'Pagar con QR (simulado)',
+    detalle: 'Demostración sin cobro real: verás un QR simulado y podrás pulsar «Simular pago». Tienes 14 días para recoger.',
   },
   {
     id: 'EFECTIVO',
-    titulo: 'Efectivo al retirar',
-    detalle: 'Paga en el local cuando retira su pedido. Plazo para retirar: 72 horas desde la confirmación.',
+    titulo: 'Pagar en efectivo',
+    detalle: 'Pagas en el local al recoger tu pedido. Tienes 72 horas desde la confirmación.',
   },
 ];
 
@@ -40,7 +40,7 @@ export default function CheckoutScreen() {
   const enCurso = useRef(false);
 
   if (!carrito || !comercio) {
-    return <ErrorState title="Carrito no disponible" message="Puede que ya se haya convertido en pedido o que haya vencido." actionLabel="Ir a Carritos" onAction={() => router.navigate('/carritos')} />;
+    return <ErrorState title="Carrito no disponible" message="Puede que ya se haya convertido en pedido o que haya vencido." actionLabel="Ir a mi carrito" onAction={() => router.navigate('/carritos')} />;
   }
 
   const problemas = problemasDeCarrito(carrito);
@@ -54,7 +54,11 @@ export default function CheckoutScreen() {
       // Un carrito sólo puede convertirse en un pedido: la clave se deriva de él.
       const pedido = await crearPedido({ carrito, metodo, claveIdempotencia: `chk-${carrito.id}` });
       eliminarCarrito(carrito.id);
-      router.replace({ pathname: '/pedido/[pedidoId]/detalle', params: { pedidoId: pedido.id } });
+      router.replace(
+        metodo === 'QR_SIMULADO'
+          ? { pathname: '/pago-qr/[pedidoId]', params: { pedidoId: pedido.id } }
+          : { pathname: '/reserva-confirmada/[pedidoId]', params: { pedidoId: pedido.id } },
+      );
     } catch (e) {
       setError(e instanceof CheckoutError ? e.motivo : 'red');
     } finally {
@@ -68,11 +72,11 @@ export default function CheckoutScreen() {
       <View style={styles.store}>
         <AppText variant="titleSm">{comercio.nombre}</AppText>
         <AppText variant="body" color="onSurfaceVariant">
-          Retiro en {comercio.local} · {comercio.piso}
+          Recojo en {comercio.piso} · {comercio.local}
         </AppText>
       </View>
 
-      <Section title="Resumen">
+      <Section title="Tu pedido">
         {carrito.lineas.map((l) => {
           const p = getProducto(l.productoId);
           return (
@@ -85,12 +89,12 @@ export default function CheckoutScreen() {
           );
         })}
         <View style={[styles.row, styles.total]}>
-          <AppText variant="title">Total de productos</AppText>
+          <AppText variant="title">Total a pagar</AppText>
           <PriceText amount={totalLineas(carrito.lineas)} variant="title" />
         </View>
       </Section>
 
-      <Section title="Forma de pago">
+      <Section title="Selecciona un método de pago">
         <View accessibilityRole="radiogroup" style={styles.metodos}>
           {METODOS.map((m) => {
             const activo = metodo === m.id;
@@ -120,10 +124,10 @@ export default function CheckoutScreen() {
 
       <View style={styles.retiro}>
         <AppText variant="label" color="onSecondaryFixedVariant">
-          Retiro presencial
+          Recojo en persona
         </AppText>
         <AppText variant="bodySm" color="onSecondaryFixedVariant">
-          Al confirmar se aparta el stock. Cuando el pedido esté listo recibirá un código de retiro (QR + PIN) para presentar en el local; es distinto del QR de pago.
+          Al confirmar se aparta el stock. Cuando tu pedido esté listo recibirás un código de recojo (QR + PIN) para mostrar en el local; es distinto del QR de pago.
         </AppText>
       </View>
 
@@ -138,16 +142,16 @@ export default function CheckoutScreen() {
       ) : null}
 
       {problemas.length > 0 ? (
-        <Button label="Revise su carrito antes de pagar" variant="outline" onPress={() => router.navigate('/carritos')} />
+        <Button label="Revisa tu carrito antes de pagar" variant="outline" onPress={() => router.navigate('/carritos')} />
       ) : (
         <Button
-          label={procesando ? 'Confirmando pedido…' : error === 'red' ? 'Reintentar' : metodo ? 'Confirmar pedido' : 'Elija una forma de pago'}
+          label={procesando ? 'Confirmando pedido…' : error === 'red' ? 'Reintentar' : metodo ? 'Continuar' : 'Elige un método de pago'}
           disabled={!metodo}
           loading={procesando}
           onPress={confirmar}
         />
       )}
-      <Button label="Modificar carrito" variant="ghost" disabled={procesando} onPress={() => router.back()} />
+      <Button label="Modificar mi carrito" variant="ghost" disabled={procesando} onPress={() => router.back()} />
     </Screen>
   );
 }

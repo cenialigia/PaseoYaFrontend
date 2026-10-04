@@ -3,17 +3,19 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { stockLabel } from '@/components/product-card';
+import { BotonFavorito, Descuento, Visual } from '@/components/producto-visual';
 import { AppText } from '@/components/ui/app-text';
 import { Button } from '@/components/ui/button';
 import { PriceText } from '@/components/ui/price-text';
 import { QuantityStepper } from '@/components/ui/quantity-stepper';
 import { Screen } from '@/components/ui/screen';
 import { ErrorState } from '@/components/ui/state-views';
-import { Colors, Radius, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
 import { getComercio, getProducto } from '@/data';
 import { useNow } from '@/hooks/use-now';
 import { motivoNoAgregado, useCart } from '@/state/cart';
 
+// CLI-09 · Detalle de producto. Sin valoraciones (DEC-F14-05: reseñas no activadas).
 export default function ProductoScreen() {
   const { productoId } = useLocalSearchParams<{ productoId: string }>();
   const producto = getProducto(productoId);
@@ -31,28 +33,37 @@ export default function ProductoScreen() {
 
   const onAgregar = () => {
     const r = agregar(producto.id, Math.min(cantidad, restante));
-    setMensaje(r.ok ? { texto: `Agregado al carrito de ${comercio.nombre}.`, ok: true } : { texto: motivoNoAgregado[r.reason], ok: false });
+    setMensaje(r.ok ? { texto: `Agregado a tu carrito de ${comercio.nombre}.`, ok: true } : { texto: motivoNoAgregado[r.reason], ok: false });
     if (r.ok) setCantidad(1);
   };
 
   return (
     <Screen>
-      <Stack.Screen options={{ title: producto.nombre }} />
-      <View style={styles.placeholder} />
+      <Stack.Screen options={{ title: producto.nombre, headerRight: () => <BotonFavorito productoId={producto.id} nombre={producto.nombre} /> }} />
+      <Visual url={producto.imagenUrl} alto={260} />
       <AppText variant="headline">{producto.nombre}</AppText>
-      <AppText variant="body" color="onSurfaceVariant">
-        {comercio.nombre} · {comercio.local} · {comercio.piso}
-      </AppText>
-      <PriceText amount={producto.precio} previous={producto.precioAnterior} variant="title" />
+      <Button
+        label={`${comercio.nombre} · ${comercio.piso} · ${comercio.local}`}
+        variant="ghost"
+        accessibilityLabel={`Ver tienda ${comercio.nombre}`}
+        onPress={() => router.push({ pathname: '/comercio/[comercioId]', params: { comercioId: comercio.id } })}
+      />
+      <View style={styles.precio}>
+        <PriceText amount={producto.precio} previous={producto.precioAnterior} variant="title" />
+        <Descuento porcentaje={producto.descuento} />
+      </View>
       <AppText variant="label" color={producto.stock === 0 ? 'error' : 'secondary'}>
         {stockLabel(producto.stock)}
-        {enCarrito > 0 ? ` · ${enCarrito} en su carrito` : ''}
+        {enCarrito > 0 ? ` · ${enCarrito} en tu carrito` : ''}
       </AppText>
-      {puedeAgregar ? (
-        <QuantityStepper label="Cantidad" value={Math.min(cantidad, restante)} max={restante} onChange={setCantidad} />
+      {producto.descripcion ? (
+        <AppText variant="body" color="onSurfaceVariant">
+          {producto.descripcion}
+        </AppText>
       ) : null}
+      {puedeAgregar ? <QuantityStepper label="Cantidad" value={Math.min(cantidad, restante)} max={restante} onChange={setCantidad} /> : null}
       <Button
-        label={!comercio.abierto ? 'Comercio cerrado' : restante === 0 ? (producto.stock === 0 ? 'Agotado' : 'Sin más unidades disponibles') : `Agregar al carrito de ${comercio.nombre}`}
+        label={!comercio.abierto ? 'Tienda cerrada' : restante === 0 ? (producto.stock === 0 ? 'Agotado' : 'No quedan más unidades') : 'Agregar al carrito'}
         disabled={!puedeAgregar}
         onPress={onAgregar}
       />
@@ -61,15 +72,14 @@ export default function ProductoScreen() {
           <AppText variant="bodySm" color={mensaje.ok ? 'onSecondaryFixedVariant' : 'error'}>
             {mensaje.texto}
           </AppText>
-          {mensaje.ok ? <Button label="Ver carritos" variant="outline" onPress={() => router.navigate('/carritos')} /> : null}
+          {mensaje.ok ? <Button label="Ver carrito" variant="outline" onPress={() => router.push('/carritos')} /> : null}
         </View>
       ) : null}
-      <Button label={`Ver tienda ${comercio.nombre}`} variant="ghost" onPress={() => router.push({ pathname: '/comercio/[comercioId]', params: { comercioId: comercio.id } })} />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  placeholder: { aspectRatio: 1, maxHeight: 280, borderRadius: Radius.card, backgroundColor: Colors.surfaceContainer },
+  precio: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.sm },
   feedback: { gap: Spacing.sm },
 });
