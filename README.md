@@ -1,5 +1,9 @@
 # PaseoYA · Frontend
 
+[![CI](https://github.com/cenialigia/PaseoYaFrontend/actions/workflows/ci.yml/badge.svg)](https://github.com/cenialigia/PaseoYaFrontend/actions/workflows/ci.yml)
+
+En cada push o pull request a `main` o `development`, GitHub Actions genera los tipos de rutas (`npx expo customize tsconfig.json`) y corre `tsc --noEmit` y `expo lint`.
+
 App móvil de PaseoYA (cliente, comercio y admin) con **Expo SDK 57 · React Native 0.86 · Expo Router**. Android es la primera plataforma (ADR-009).
 
 La documentación, los requisitos y las decisiones viven en el Core, que no está dentro de este repositorio: [cenialigia/documentacionPaseoYa](https://github.com/cenialigia/documentacionPaseoYa). El backend está en [cenialigia/PaseoYaBackend](https://github.com/cenialigia/PaseoYaBackend).
