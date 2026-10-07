@@ -1,0 +1,38 @@
+name: CI
+
+# Tipos y lint en cada cambio. No necesita backend ni claves: sólo revisa el código.
+on:
+  push:
+    branches: [main, development]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  calidad:
+    name: Tipos y lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      # Los tipos de las rutas (.expo/types) no se versionan; se generan sin arrancar Metro
+      # para que tsc detecte rutas inexistentes.
+      - name: Generar tipos de rutas de Expo Router
+        run: npx expo customize tsconfig.json
+
+      - name: Comprobar tipos
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npx expo lint
